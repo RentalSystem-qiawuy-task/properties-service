@@ -42,8 +42,9 @@ dependencies {
     // PostGIS / truy vấn vị trí địa lý
     implementation("org.hibernate.orm:hibernate-spatial")
 
-    // Database migrations: giữ Liquibase theo cấu hình hiện tại
-    implementation("org.springframework.boot:spring-boot-starter-liquibase")
+    // Database migrations: giữ flyway theo cấu hình hiện tại
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
+    runtimeOnly("org.flywaydb:flyway-database-postgresql")
 
     // Kafka: phát và nhận domain events
     implementation("org.springframework.boot:spring-boot-starter-kafka")
