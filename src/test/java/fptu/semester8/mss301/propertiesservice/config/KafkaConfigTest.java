@@ -1,0 +1,13 @@
+package fptu.semester8.mss301.propertiesservice.config;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+
+class KafkaConfigTest {
+    @Test
+    void createsErrorHandlerWithoutConnectingToKafka() {
+        assertInstanceOf(DefaultErrorHandler.class, new KafkaConfig().kafkaDefaultErrorHandler());
+    }
+}
