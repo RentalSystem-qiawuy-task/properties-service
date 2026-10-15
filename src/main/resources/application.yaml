@@ -1,14 +1,18 @@
 server:
   port: ${SERVER_PORT:8083}
+  shutdown: graceful
 
 spring:
   application:
     name: properties-service
 
+  lifecycle:
+    timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT:20s}
+
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:RoomRental}?currentSchema=${SCHEMA_NAME:properties_service},public
     username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:postgres}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   servlet:
@@ -34,14 +38,56 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP_ID:properties-service}
-      auto-offset-reset: earliest
+      auto-offset-reset: ${KAFKA_AUTO_OFFSET_RESET:earliest}
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      acks: all
+      retries: ${KAFKA_PRODUCER_RETRIES:10}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        "[enable.idempotence]": true
+        "[max.in.flight.requests.per.connection]": 5
+    listener:
+      ack-mode: record
+      missing-topics-fatal: false
+
+snowflake:
+  generator-id: ${SNOWFLAKE_GENERATOR_ID:0}
+
+springdoc:
+  api-docs:
+    enabled: ${OPENAPI_ENABLED:false}
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: ${SWAGGER_UI_ENABLED:false}
+
+eureka:
+  client:
+    enabled: ${EUREKA_CLIENT_ENABLED:false}
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: ${ACTUATOR_EXPOSED_ENDPOINTS:health,info}
   endpoint:
     health:
+      show-details: never
+      show-components: never
       probes:
         enabled: true
+  health:
+    kafka:
+      enabled: false
+  info:
+    env:
+      enabled: false
+
+logging:
+  level:
+    root: ${LOGGING_LEVEL_ROOT:INFO}

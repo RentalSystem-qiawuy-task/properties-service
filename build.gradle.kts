@@ -42,6 +42,9 @@ dependencies {
     // PostGIS / truy vấn vị trí địa lý
     implementation("org.hibernate.orm:hibernate-spatial")
 
+    // Application-generated BIGINT identifiers using the Snowflake algorithm
+    implementation("de.mkammerer.snowflake-id:snowflake-id:0.0.2")
+
     // Database migrations: giữ flyway theo cấu hình hiện tại
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     runtimeOnly("org.flywaydb:flyway-database-postgresql")
@@ -57,7 +60,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
 
     // Swagger / OpenAPI
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
 
     // Lombok
     compileOnly("org.projectlombok:lombok")
