@@ -1,5 +1,6 @@
 package fptu.semester8.mss301.propertiesservice.features.building.application;
 
+import fptu.exe202.signify.apiresponse.exception.ResourceNotFoundException;
 import fptu.semester8.mss301.propertiesservice.common.id.IdGenerator;
 import fptu.semester8.mss301.propertiesservice.features.building.application.exception.BuildingHasRoomsException;
 import fptu.semester8.mss301.propertiesservice.features.building.application.exception.BuildingNotFoundException;
@@ -30,11 +31,13 @@ public class BuildingService {
 
     @Transactional
     public Building create(BuildingCommand request) {
+
         validateWard(request.wardId());
+        validateProvince(request.provinceId());
         Instant now = Instant.now();
         Building building = new Building(
                 idGenerator.nextId(), request.name().trim(), request.address().trim(),
-                request.wardId(), request.latitude(), request.longitude(),
+                request.wardId(), request.provinceId(), request.latitude(), request.longitude(),
                 request.description(), now
         );
         return buildingRepository.save(building);
@@ -56,8 +59,9 @@ public class BuildingService {
     public Building update(long buildingId, BuildingCommand request) {
         Building building = findActive(buildingId);
         validateWard(request.wardId());
+        validateProvince(request.provinceId());
         building.update(
-                request.name().trim(), request.address().trim(), request.wardId(),
+                request.name().trim(), request.address().trim(), request.wardId(), request.provinceId(),
                 request.latitude(), request.longitude(), request.description(), Instant.now()
         );
         return buildingRepository.save(building);
@@ -83,8 +87,14 @@ public class BuildingService {
     }
 
     private void validateWard(Long wardId) {
-        if (!referenceRepository.wardExists(wardId)) {
+        if (!referenceRepository.existWardById(wardId)) {
             throw new WardNotFoundException(wardId);
+        }
+    }
+
+    private void validateProvince(Long provinceId) {
+        if (!referenceRepository.existProvinceById(provinceId)) {
+            throw new ResourceNotFoundException("Province %d was not found".formatted(provinceId), "PROVINCE_NOT_FOUND");
         }
     }
 }

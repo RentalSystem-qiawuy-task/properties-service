@@ -24,6 +24,9 @@ public class Building {
     @Column(name = "ward_id", nullable = false)
     private Long wardId;
 
+    @Column(name = "province_id", nullable = false)
+    private Long provinceId;
+
     @Column(name = "latitude", nullable = false, precision = 10, scale = 8)
     private BigDecimal latitude;
 
@@ -48,13 +51,14 @@ public class Building {
     protected Building() {
     }
 
-    public Building(Long buildingId, String name, String address, Long wardId,
+    public Building(Long buildingId, String name, String address, Long wardId, Long provinceId,
                     BigDecimal latitude, BigDecimal longitude, String description,
                     Instant now) {
         this.buildingId = buildingId;
         this.name = name;
         this.address = address;
         this.wardId = wardId;
+        this.provinceId = provinceId;
         this.latitude = latitude;
         this.longitude = longitude;
         this.description = description;
@@ -63,12 +67,13 @@ public class Building {
         this.updatedAt = now;
     }
 
-    public void update(String name, String address, Long wardId,
+    public void update(String name, String address, Long wardId, Long provinceId,
                        BigDecimal latitude, BigDecimal longitude,
                        String description, Instant now) {
         this.name = name;
         this.address = address;
         this.wardId = wardId;
+        this.provinceId = provinceId;
         this.latitude = latitude;
         this.longitude = longitude;
         this.description = description;
@@ -85,6 +90,7 @@ public class Building {
     public String getName() { return name; }
     public String getAddress() { return address; }
     public Long getWardId() { return wardId; }
+    public Long getProvinceId() { return provinceId; }
     public BigDecimal getLatitude() { return latitude; }
     public BigDecimal getLongitude() { return longitude; }
     public String getDescription() { return description; }

@@ -43,7 +43,8 @@ class BuildingServiceTest {
 
     @Test
     void createUsesApplicationIdAndValidatesWard() {
-        when(referenceRepository.wardExists(7L)).thenReturn(true);
+        when(referenceRepository.existWardById(7L)).thenReturn(true);
+        when(referenceRepository.existProvinceById(1L)).thenReturn(true);
         when(idGenerator.nextId()).thenReturn(123L);
         when(buildingRepository.save(any(Building.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -51,13 +52,13 @@ class BuildingServiceTest {
 
         assertEquals(123L, response.getBuildingId());
         assertEquals("Test building", response.getName());
-        verify(referenceRepository).wardExists(7L);
+        verify(referenceRepository).existWardById(7L);
         verify(idGenerator).nextId();
     }
 
     @Test
     void createRejectsUnknownWard() {
-        when(referenceRepository.wardExists(7L)).thenReturn(false);
+        when(referenceRepository.existWardById(7L)).thenReturn(false);
 
         assertThrows(WardNotFoundException.class, () -> service.create(request()));
         verify(buildingRepository, never()).save(any());
@@ -87,7 +88,8 @@ class BuildingServiceTest {
     void updateChangesEditableFields() {
         var building = building(123L);
         when(buildingRepository.findActiveById(123L)).thenReturn(Optional.of(building));
-        when(referenceRepository.wardExists(7L)).thenReturn(true);
+        when(referenceRepository.existWardById(7L)).thenReturn(true);
+        when(referenceRepository.existProvinceById(1L)).thenReturn(true);
 
         var response = service.update(123L, request());
 
@@ -119,13 +121,13 @@ class BuildingServiceTest {
     }
 
     private BuildingCommand request() {
-        return new BuildingCommand(" Test building ", " 123 Example Street ", 7L,
+        return new BuildingCommand(" Test building ", " 123 Example Street ", 7L, 1L,
                 new BigDecimal("10.00000000"), new BigDecimal("106.00000000"), "Description");
     }
 
     private Building building(long id) {
         Instant now = Instant.parse("2026-01-01T00:00:00Z");
-        return new Building(id, "Old building", "Old address", 7L,
+        return new Building(id, "Old building", "Old address", 7L, 1L,
                 new BigDecimal("10.00000000"), new BigDecimal("106.00000000"), null, now);
     }
 }
