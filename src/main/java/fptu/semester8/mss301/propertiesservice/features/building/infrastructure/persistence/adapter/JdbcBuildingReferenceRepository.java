@@ -40,6 +40,12 @@ public class JdbcBuildingReferenceRepository implements BuildingReferenceReposit
     }
 
     @Override
+    public boolean buildingExists(long buildingId) {
+        Boolean exists = jdbcTemplate.queryForObject("SELECT EXISTS (SELECT 1 FROM building WHERE building_id = ? AND is_deleted = false)", Boolean.class, buildingId);
+        return Boolean.TRUE.equals(exists);
+    }
+
+    @Override
     public boolean existProvinceById(long provinceId) {
         return provinceRepository.existsByProvinceId(provinceId);
     }
@@ -47,5 +53,13 @@ public class JdbcBuildingReferenceRepository implements BuildingReferenceReposit
     @Override
     public boolean existWardById(long wardId) {
         return wardRepository.existsByWardId(wardId);
+    }
+
+    @Override
+    public boolean wardBelongsToProvince(long wardId, long provinceId) {
+        Boolean matches = jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM ward WHERE ward_id = ? AND province_id = ?)",
+                Boolean.class, wardId, provinceId);
+        return Boolean.TRUE.equals(matches);
     }
 }

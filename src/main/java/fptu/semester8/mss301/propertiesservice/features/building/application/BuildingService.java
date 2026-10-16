@@ -8,6 +8,8 @@ import fptu.semester8.mss301.propertiesservice.features.building.application.exc
 import fptu.semester8.mss301.propertiesservice.features.building.application.command.BuildingCommand;
 import fptu.semester8.mss301.propertiesservice.features.building.application.port.out.BuildingReferenceRepository;
 import fptu.semester8.mss301.propertiesservice.features.building.application.port.out.BuildingRepository;
+import fptu.semester8.mss301.propertiesservice.features.building.application.port.out.BuildingSearchRepository;
+import fptu.semester8.mss301.propertiesservice.features.building.application.model.BuildingSearchItem;
 import fptu.semester8.mss301.propertiesservice.features.building.domain.Building;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -15,12 +17,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import fptu.exe202.signify.apiresponse.exception.BadRequestException;
+import java.math.BigDecimal;
 
 import java.time.Instant;
 
 @Service
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
-@RequiredArgsConstructor
 public class BuildingService {
 
     BuildingRepository buildingRepository;
@@ -29,11 +34,29 @@ public class BuildingService {
 
     IdGenerator idGenerator;
 
+    BuildingSearchRepository searchRepository;
+
+    double maxSearchRadiusMeters;
+
+    @Autowired
+    public BuildingService(BuildingRepository buildingRepository,
+                           BuildingReferenceRepository referenceRepository,
+                           IdGenerator idGenerator,
+                           BuildingSearchRepository searchRepository,
+                           @Value("${building.search.max-radius-meters:50000}") double maxSearchRadiusMeters) {
+        this.buildingRepository = buildingRepository;
+        this.referenceRepository = referenceRepository;
+        this.idGenerator = idGenerator;
+        this.searchRepository = searchRepository;
+        this.maxSearchRadiusMeters = maxSearchRadiusMeters;
+    }
+
     @Transactional
     public Building create(BuildingCommand request) {
 
         validateWard(request.wardId());
         validateProvince(request.provinceId());
+        validateWardProvince(request.wardId(), request.provinceId());
         Instant now = Instant.now();
         Building building = new Building(
                 idGenerator.nextId(), request.name().trim(), request.address().trim(),
@@ -60,6 +83,7 @@ public class BuildingService {
         Building building = findActive(buildingId);
         validateWard(request.wardId());
         validateProvince(request.provinceId());
+        validateWardProvince(request.wardId(), request.provinceId());
         building.update(
                 request.name().trim(), request.address().trim(), request.wardId(), request.provinceId(),
                 request.latitude(), request.longitude(), request.description(), Instant.now()
@@ -95,6 +119,31 @@ public class BuildingService {
     private void validateProvince(Long provinceId) {
         if (!referenceRepository.existProvinceById(provinceId)) {
             throw new ResourceNotFoundException("Province %d was not found".formatted(provinceId), "PROVINCE_NOT_FOUND");
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BuildingSearchItem> search(String keyword, Long provinceId, Long wardId, Pageable pageable) {
+        if (provinceId != null) validateProvince(provinceId);
+        if (wardId != null) validateWard(wardId);
+        if (wardId != null && provinceId != null) validateWardProvince(wardId, provinceId);
+        return searchRepository.search(keyword, provinceId, wardId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BuildingSearchItem> nearby(BigDecimal latitude, BigDecimal longitude, double radiusMeters, Pageable pageable) {
+        if (latitude == null || latitude.compareTo(BigDecimal.valueOf(-90)) < 0 || latitude.compareTo(BigDecimal.valueOf(90)) > 0)
+            throw new BadRequestException("latitude must be between -90 and 90", "INVALID_LATITUDE");
+        if (longitude == null || longitude.compareTo(BigDecimal.valueOf(-180)) < 0 || longitude.compareTo(BigDecimal.valueOf(180)) > 0)
+            throw new BadRequestException("longitude must be between -180 and 180", "INVALID_LONGITUDE");
+        if (!Double.isFinite(radiusMeters) || radiusMeters <= 0 || radiusMeters > maxSearchRadiusMeters)
+            throw new BadRequestException("radiusMeters must be greater than 0 and at most " + maxSearchRadiusMeters, "INVALID_RADIUS");
+        return searchRepository.nearby(latitude, longitude, radiusMeters, pageable);
+    }
+
+    private void validateWardProvince(long wardId, long provinceId) {
+        if (!referenceRepository.wardBelongsToProvince(wardId, provinceId)) {
+            throw new BadRequestException("Ward does not belong to the supplied province", "WARD_PROVINCE_MISMATCH");
         }
     }
 }

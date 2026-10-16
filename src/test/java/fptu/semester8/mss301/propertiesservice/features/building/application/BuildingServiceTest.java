@@ -5,9 +5,11 @@ import fptu.semester8.mss301.propertiesservice.features.building.application.com
 import fptu.semester8.mss301.propertiesservice.features.building.application.exception.BuildingHasRoomsException;
 import fptu.semester8.mss301.propertiesservice.features.building.application.exception.BuildingNotFoundException;
 import fptu.semester8.mss301.propertiesservice.features.building.application.exception.WardNotFoundException;
+import fptu.exe202.signify.apiresponse.exception.BadRequestException;
 import fptu.semester8.mss301.propertiesservice.features.building.domain.Building;
 import fptu.semester8.mss301.propertiesservice.features.building.application.port.out.BuildingReferenceRepository;
 import fptu.semester8.mss301.propertiesservice.features.building.application.port.out.BuildingRepository;
+import fptu.semester8.mss301.propertiesservice.features.building.application.port.out.BuildingSearchRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
@@ -22,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -32,19 +35,22 @@ class BuildingServiceTest {
     private BuildingReferenceRepository referenceRepository;
     private IdGenerator idGenerator;
     private BuildingService service;
+    private BuildingSearchRepository searchRepository;
 
     @BeforeEach
     void setUp() {
         buildingRepository = mock(BuildingRepository.class);
         referenceRepository = mock(BuildingReferenceRepository.class);
         idGenerator = mock(IdGenerator.class);
-        service = new BuildingService(buildingRepository, referenceRepository, idGenerator);
+        searchRepository = mock(BuildingSearchRepository.class);
+        service = new BuildingService(buildingRepository, referenceRepository, idGenerator, searchRepository, 50_000);
     }
 
     @Test
     void createUsesApplicationIdAndValidatesWard() {
         when(referenceRepository.existWardById(7L)).thenReturn(true);
         when(referenceRepository.existProvinceById(1L)).thenReturn(true);
+        when(referenceRepository.wardBelongsToProvince(7L, 1L)).thenReturn(true);
         when(idGenerator.nextId()).thenReturn(123L);
         when(buildingRepository.save(any(Building.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -62,6 +68,30 @@ class BuildingServiceTest {
 
         assertThrows(WardNotFoundException.class, () -> service.create(request()));
         verify(buildingRepository, never()).save(any());
+    }
+
+    @Test
+    void createRejectsWardFromAnotherProvince() {
+        when(referenceRepository.existWardById(7L)).thenReturn(true);
+        when(referenceRepository.existProvinceById(1L)).thenReturn(true);
+        when(referenceRepository.wardBelongsToProvince(7L, 1L)).thenReturn(false);
+
+        assertThrows(BadRequestException.class, () -> service.create(request()));
+        verify(buildingRepository, never()).save(any());
+    }
+
+    @Test
+    void nearbyRejectsRadiusAboveConfiguredMaximum() {
+        assertThrows(BadRequestException.class, () -> service.nearby(
+                new BigDecimal("10"), new BigDecimal("106"), 50_001, PageRequest.of(0, 10)));
+        verify(searchRepository, never()).nearby(any(), any(), anyDouble(), any());
+    }
+
+    @Test
+    void nearbyRejectsOutOfRangeCoordinates() {
+        assertThrows(BadRequestException.class, () -> service.nearby(
+                new BigDecimal("91"), new BigDecimal("106"), 1_000, PageRequest.of(0, 10)));
+        verify(searchRepository, never()).nearby(any(), any(), anyDouble(), any());
     }
 
     @Test
@@ -90,6 +120,7 @@ class BuildingServiceTest {
         when(buildingRepository.findActiveById(123L)).thenReturn(Optional.of(building));
         when(referenceRepository.existWardById(7L)).thenReturn(true);
         when(referenceRepository.existProvinceById(1L)).thenReturn(true);
+        when(referenceRepository.wardBelongsToProvince(7L, 1L)).thenReturn(true);
 
         var response = service.update(123L, request());
 

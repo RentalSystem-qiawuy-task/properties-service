@@ -57,6 +57,10 @@ spring:
 snowflake:
   generator-id: ${SNOWFLAKE_GENERATOR_ID:0}
 
+building:
+  search:
+    max-radius-meters: ${BUILDING_SEARCH_MAX_RADIUS_METERS:50000}
+
 springdoc:
   api-docs:
     enabled: ${OPENAPI_ENABLED:false}
