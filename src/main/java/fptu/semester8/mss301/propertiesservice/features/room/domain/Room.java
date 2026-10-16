@@ -24,7 +24,6 @@ public class Room {
     @Column(name = "max_capacity", nullable = false)
     private Integer maxCapacity;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private String status;
 
