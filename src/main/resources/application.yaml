@@ -4,7 +4,7 @@ server:
 
 spring:
   application:
-    name: properties-service
+    name: property-service
 
   lifecycle:
     timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT:20s}

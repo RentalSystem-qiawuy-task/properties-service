@@ -8,6 +8,7 @@ public record BuildingResponse(
         String name,
         String address,
         Long wardId,
+        Long provinceId,
         BigDecimal latitude,
         BigDecimal longitude,
         String description,
