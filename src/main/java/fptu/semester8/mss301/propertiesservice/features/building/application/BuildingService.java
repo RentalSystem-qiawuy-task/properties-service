@@ -1,5 +1,6 @@
 package fptu.semester8.mss301.propertiesservice.features.building.application;
 
+import fptu.exe202.signify.apiresponse.exception.ResourceNotFoundException;
 import fptu.semester8.mss301.propertiesservice.common.id.IdGenerator;
 import fptu.semester8.mss301.propertiesservice.features.building.application.exception.BuildingHasRoomsException;
 import fptu.semester8.mss301.propertiesservice.features.building.application.exception.BuildingNotFoundException;
@@ -30,7 +31,14 @@ public class BuildingService {
 
     @Transactional
     public Building create(BuildingCommand request) {
-        validateWard(request.wardId());
+
+        if (referenceRepository.existWardById(request.wardId())) {
+            throw new ResourceNotFoundException("Ward not exists");
+        }
+
+        if (referenceRepository.existProvinceById(request.provinceId())) {
+            throw new ResourceNotFoundException("Province not exists");
+        }
         Instant now = Instant.now();
         Building building = new Building(
                 idGenerator.nextId(), request.name().trim(), request.address().trim(),

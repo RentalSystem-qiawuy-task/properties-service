@@ -12,6 +12,7 @@ public record BuildingRequest(
         @NotBlank @Size(max = 200) String name,
         @NotBlank @Size(max = 500) String address,
         @NotNull Long wardId,
+        @NotNull Long provinceId,
         @NotNull @DecimalMin("-90") @DecimalMax("90") BigDecimal latitude,
         @NotNull @DecimalMin("-180") @DecimalMax("180") BigDecimal longitude,
         String description

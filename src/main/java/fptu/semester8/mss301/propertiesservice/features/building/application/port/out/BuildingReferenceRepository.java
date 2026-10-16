@@ -4,4 +4,7 @@ public interface BuildingReferenceRepository {
     boolean wardExists(long wardId);
 
     boolean hasRooms(long buildingId);
+    boolean existProvinceById(long provinceId);
+
+    boolean existWardById(long wardId);
 }
