@@ -74,6 +74,20 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
 
+storage:
+  provider: ${STORAGE_PROVIDER:r2}
+  public-base-url: ${R2_PUBLIC_BASE_URL:}
+
+  image:
+    max-size: ${STORAGE_IMAGE_MAX_SIZE:5242880}
+
+cloudflare:
+  r2:
+    access-key-id: ${R2_ACCESS_KEY_ID:${R2_ACCESS_KEY:}}
+    secret-key-id: ${R2_SECRET_ACCESS_KEY:${R2_SECRET_KEY:}}
+    end-point: ${R2_ENDPOINT:}
+    bucket-name: ${R2_BUCKET:}
+
 management:
   endpoints:
     web:
