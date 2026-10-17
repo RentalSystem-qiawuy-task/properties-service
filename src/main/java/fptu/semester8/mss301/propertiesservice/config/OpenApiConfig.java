@@ -11,7 +11,8 @@ public class OpenApiConfig {
     OpenAPI propertiesServiceOpenApi() {
         return new OpenAPI().info(new Info()
                 .title("Room Rental Properties Service API")
-                .description("HTTP API for building management and its property location references.")
+                .description("API quản lý tòa nhà, phòng cho thuê, loại phòng, đơn vị hành chính và tải ảnh. "
+                        + "Các endpoint dữ liệu trả về ApiResponse; endpoint danh sách có thể trả Page khi được phân trang.")
                 .version("v1"));
     }
 }

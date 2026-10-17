@@ -3,6 +3,9 @@ package fptu.semester8.mss301.propertiesservice.features.imagestorage.api;
 import fptu.exe202.signify.apiresponse.response.ApiResponse;
 import fptu.semester8.mss301.propertiesservice.features.imagestorage.application.ImageStorageService;
 import fptu.semester8.mss301.propertiesservice.features.imagestorage.infrastructure.StorageObject;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.MediaType;
@@ -17,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/images")
+@Tag(name = "Ảnh", description = "Tải ảnh lên object storage")
 @RequiredArgsConstructor
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class ImageStorageController {
@@ -27,8 +31,10 @@ public class ImageStorageController {
             path = "/buildings/{buildingId}",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
+    @Operation(summary = "Tải ảnh tòa nhà", description = "Tải một ảnh multipart/form-data lên thư mục building và gắn với buildingId. Phần file phải có tên file; giới hạn kích thước cấu hình storage.image.max-size, mặc định 5 MiB.")
     public ApiResponse<StorageObject> uploadBuildingImage(
-            @PathVariable long buildingId,
+            @Parameter(description = "ID tòa nhà sở hữu ảnh", example = "123456789") @PathVariable long buildingId,
+            @Parameter(description = "Tệp ảnh gửi dưới dạng multipart part tên file", required = true)
             @RequestPart("file") MultipartFile file
     ) {
         return ApiResponse.success("Building image uploaded", imageStorageService.upload("building", buildingId, file));
@@ -38,16 +44,20 @@ public class ImageStorageController {
             path = "/rooms/{roomId}",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
+    @Operation(summary = "Tải ảnh phòng", description = "Tải một ảnh multipart/form-data lên thư mục room và gắn với roomId. Giới hạn kích thước mỗi ảnh được cấu hình qua storage.image.max-size, mặc định 5 MiB.")
     public ApiResponse<StorageObject> uploadRoomImage(
-            @PathVariable long roomId,
+            @Parameter(description = "ID phòng sở hữu ảnh", example = "123456789") @PathVariable long roomId,
+            @Parameter(description = "Tệp ảnh gửi dưới dạng multipart part tên file", required = true)
             @RequestPart("file") MultipartFile file
     ) {
         return ApiResponse.success("Room image uploaded", imageStorageService.upload("room", roomId, file));
     }
 
     @PostMapping(path = "/{folderName}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Tải nhiều ảnh", description = "Tải một hoặc nhiều tệp trong multipart/form-data; tên part là files. folderName xác định thư mục lưu trữ. Mỗi ảnh chịu giới hạn storage.image.max-size, mặc định 5 MiB; tổng request tối đa 50 MiB theo cấu hình Spring.")
     public ApiResponse<List<String>> uploadImages(
-            @PathVariable String folderName,
+            @Parameter(description = "Tên thư mục lưu trữ ảnh", example = "properties") @PathVariable String folderName,
+            @Parameter(description = "Danh sách tệp multipart part tên files", required = true)
             @RequestPart("files") MultipartFile[] files
     ) {
         return ApiResponse.success("Images uploaded", imageStorageService.upload(folderName, files));
