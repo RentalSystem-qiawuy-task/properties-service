@@ -1,3 +1,4 @@
+
 package fptu.semester8.mss301.propertiesservice.features.imagestorage.infrastructure;
 
 import jakarta.validation.Valid;
@@ -10,7 +11,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public record ImageStorageProperties(
         @DefaultValue("r2") String provider,
-        String publicBaseUrl,
+        @DefaultValue("") String publicBaseUrl,
         @Valid @DefaultValue Image image
 ) {
     public record Image(
