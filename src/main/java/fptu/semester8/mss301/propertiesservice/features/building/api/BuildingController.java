@@ -4,6 +4,7 @@ import fptu.exe202.signify.apiresponse.exception.BadRequestException;
 import fptu.exe202.signify.apiresponse.response.ApiResponse;
 import fptu.semester8.mss301.propertiesservice.features.building.api.dto.BuildingRequest;
 import fptu.semester8.mss301.propertiesservice.features.building.api.dto.BuildingResponse;
+import fptu.semester8.mss301.propertiesservice.features.building.api.dto.BuildingSearchResponse;
 import fptu.semester8.mss301.propertiesservice.features.building.application.BuildingService;
 import fptu.semester8.mss301.propertiesservice.features.building.mapper.BuildingMapper;
 import jakarta.validation.Valid;
@@ -25,17 +26,56 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.math.BigDecimal;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
+import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
+@Validated
 @RequestMapping("/api/v1/buildings")
 @Tag(name = "Buildings", description = "Building management")
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
 public class BuildingController {
+
     static int MAX_PAGE_SIZE = 100;
     BuildingService buildingService;
+
     BuildingMapper buildingMapper;
+
+    @GetMapping("/search")
+    @Operation(summary = "Search buildings by name or address")
+    public ApiResponse<Page<BuildingSearchResponse>> search(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long provinceId,
+            @RequestParam(required = false) Long wardId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+        Pageable pageable = searchPageable(page, size, sort, false);
+        return ApiResponse.success(buildingService.search(keyword, provinceId, wardId, pageable)
+                .map(buildingMapper::toSearchResponse));
+    }
+
+    @GetMapping("/nearby")
+    @Operation(summary = "Find buildings within a radius; distanceMeters is calculated by PostGIS")
+    public ApiResponse<Page<BuildingSearchResponse>> nearby(
+            @Parameter(description = "Latitude from -90 to 90")
+            @RequestParam @DecimalMin("-90") @DecimalMax("90") BigDecimal latitude,
+            @Parameter(description = "Longitude from -180 to 180")
+            @RequestParam @DecimalMin("-180") @DecimalMax("180") BigDecimal longitude,
+            @Parameter(description = "Search radius in meters; maximum is configured by building.search.max-radius-meters (default 50000)")
+            @RequestParam @Positive double radiusMeters,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = searchPageable(page, size, "distanceMeters,asc", true);
+        return ApiResponse.success(buildingService.nearby(latitude, longitude, radiusMeters, pageable)
+                .map(buildingMapper::toSearchResponse));
+    }
 
     @PostMapping
     @Operation(summary = "Create a building")
@@ -98,5 +138,25 @@ public class BuildingController {
             throw new BadRequestException("sort direction must be asc or desc", "INVALID_SORT_DIRECTION");
         }
         return Sort.by(direction, property);
+    }
+
+    private Pageable searchPageable(int page, int size, String sort, boolean nearby) {
+        if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+            throw new BadRequestException("page must be >= 0 and size must be between 1 and 100", "INVALID_PAGE");
+        }
+        String[] parts = sort.split(",", 2);
+        String property = parts[0].trim();
+        if (!property.equals("createdAt") && !property.equals("updatedAt") && !property.equals("name")
+                && !(nearby && property.equals("distanceMeters"))) {
+            throw new BadRequestException("sort must be createdAt, updatedAt, name" + (nearby ? " or distanceMeters" : ""), "INVALID_SORT");
+        }
+        Sort.Direction direction;
+        try {
+            direction = parts.length == 2 ? Sort.Direction.fromString(parts[1].trim()) : Sort.Direction.DESC;
+        } catch (IllegalArgumentException exception) {
+            throw new BadRequestException("sort direction must be asc or desc", "INVALID_SORT_DIRECTION");
+        }
+        if (nearby && parts.length == 1) direction = Sort.Direction.ASC;
+        return PageRequest.of(page, size, Sort.by(direction, property));
     }
 }
