@@ -34,7 +34,7 @@ public class RoomService {
         if (rooms.existsByBuildingIdAndRoomCode(r.buildingId(), r.roomCode().trim()))
             throw new ConflictException("Room code already exists in building", "ROOM_CODE_CONFLICT");
         Instant n = Instant.now();
-        return rooms.save(new Room(ids.nextId(), r.buildingId(), r.roomTypeId(), r.roomCode().trim(), r.maxCapacity(), status, r.area(), r.bedroomCount(), r.bathroomCount(), r.basePrice(), n));
+        return rooms.save(new Room(ids.nextId(), r.buildingId(), r.roomTypeId(), r.roomCode().trim(), r.maxCapacity(), RoomStatus.VACANT.getValue(), r.area(), r.bedroomCount(), r.bathroomCount(), r.basePrice(), n));
     }
 
     @Transactional(readOnly = true)
