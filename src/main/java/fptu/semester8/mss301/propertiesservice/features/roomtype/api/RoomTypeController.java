@@ -5,6 +5,7 @@ import fptu.semester8.mss301.propertiesservice.features.roomtype.api.dto.*;
 import fptu.semester8.mss301.propertiesservice.features.roomtype.application.RoomTypeService;
 import fptu.semester8.mss301.propertiesservice.features.roomtype.mapper.RoomTypeMapper;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ public class RoomTypeController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Lấy loại phòng theo ID", description = "Trả về loại phòng theo ID.")
-    public ApiResponse<RoomTypeResponse> get(@PathVariable long id) {
+    public ApiResponse<RoomTypeResponse> get(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id) {
         return ApiResponse.success(mapper.toResponse(service.get(id)));
     }
 
@@ -43,13 +44,13 @@ public class RoomTypeController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Cập nhật loại phòng", description = "Cập nhật mã, tên và mô tả loại phòng theo ID.")
-    public ApiResponse<RoomTypeResponse> update(@PathVariable long id, @Valid @RequestBody RoomTypeRequest r) {
+    public ApiResponse<RoomTypeResponse> update(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id, @Valid @RequestBody RoomTypeRequest r) {
         return ApiResponse.success("Room type updated", mapper.toResponse(service.update(id, r)));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa loại phòng", description = "Xóa loại phòng theo ID.")
-    public ApiResponse<Void> delete(@PathVariable long id) {
+    public ApiResponse<Void> delete(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id) {
         service.delete(id);
         return ApiResponse.success("Room type deleted", null);
     }

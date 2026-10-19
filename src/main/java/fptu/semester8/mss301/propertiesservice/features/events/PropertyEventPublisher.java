@@ -55,8 +55,8 @@ public class PropertyEventPublisher {
             ps.setObject(3, today);
         }, rs -> rs.next() ? rs.getBigDecimal(1) : room.getBasePrice());
         write("RoomStatusChanged", room.getId(), new RoomStatusPayload(
-                room.getId(), room.getBuildingId(), details.buildingName(), details.address(),
-                details.wardId(), null, room.getRoomTypeId(), details.roomTypeName(),
+                Long.toString(room.getId()), Long.toString(room.getBuildingId()), details.buildingName(), details.address(),
+                Long.toString(details.wardId()), null, Long.toString(room.getRoomTypeId()), details.roomTypeName(),
                 room.getRoomCode(), room.getMaxCapacity(), room.getStatus(), previousStatus,
                 price, details.latitude(), details.longitude()));
     }
@@ -64,14 +64,14 @@ public class PropertyEventPublisher {
     @Transactional(propagation = Propagation.MANDATORY)
     public void roomPriceChanged(RoomPrice price) {
         write("RoomPriceChanged", price.getRoomId(),
-                new RoomPricePayload(price.getRoomId(), price.getPrice(), price.getEffectiveFrom()));
+                new RoomPricePayload(Long.toString(price.getRoomId()), price.getPrice(), price.getEffectiveFrom()));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void buildingUpdated(Building building) {
         write("BuildingUpdated", building.getBuildingId(), new BuildingPayload(
-                building.getBuildingId(), building.getName(), building.getAddress(),
-                building.getWardId(), null, building.getLatitude(), building.getLongitude()));
+                Long.toString(building.getBuildingId()), building.getName(), building.getAddress(),
+                Long.toString(building.getWardId()), null, building.getLatitude(), building.getLongitude()));
     }
 
     private void write(String type, long key, Object payload) {
@@ -98,13 +98,13 @@ public class PropertyEventPublisher {
 
     private record RoomDetails(String buildingName, String address, Long wardId,
                                String roomTypeName, BigDecimal latitude, BigDecimal longitude) {}
-    private record RoomStatusPayload(Long roomId, Long buildingId, String buildingName,
-                                     String address, Long wardId, Long districtId,
-                                     Long roomTypeId, String roomTypeName, String roomNumber,
+    private record RoomStatusPayload(String roomId, String buildingId, String buildingName,
+                                     String address, String wardId, String districtId,
+                                     String roomTypeId, String roomTypeName, String roomNumber,
                                      Integer maxCapacity, String status, String previousStatus,
                                      BigDecimal price, BigDecimal latitude, BigDecimal longitude) {}
-    private record RoomPricePayload(Long roomId, BigDecimal price, LocalDate effectiveFrom) {}
-    private record BuildingPayload(Long buildingId, String name, String address,
-                                   Long wardId, Long districtId, BigDecimal latitude,
+    private record RoomPricePayload(String roomId, BigDecimal price, LocalDate effectiveFrom) {}
+    private record BuildingPayload(String buildingId, String name, String address,
+                                   String wardId, String districtId, BigDecimal latitude,
                                    BigDecimal longitude) {}
 }

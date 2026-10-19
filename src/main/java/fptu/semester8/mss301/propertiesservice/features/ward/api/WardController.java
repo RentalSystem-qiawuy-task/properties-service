@@ -5,6 +5,7 @@ import fptu.semester8.mss301.propertiesservice.features.ward.api.dto.*;
 import fptu.semester8.mss301.propertiesservice.features.ward.application.WardService;
 import fptu.semester8.mss301.propertiesservice.features.ward.mapper.WardMapper;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -38,26 +39,26 @@ public class WardController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Lấy phường theo ID", description = "Trả về thông tin phường theo wardId.")
-    public ApiResponse<WardResponse> get(@PathVariable long id) {
+    public ApiResponse<WardResponse> get(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id) {
         return ApiResponse.success(mapper.toResponse(service.get(id)));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Cập nhật phường", description = "Cập nhật tỉnh trực thuộc, mã, tên và loại đơn vị hành chính.")
-    public ApiResponse<WardResponse> update(@PathVariable long id, @Valid @RequestBody WardRequest r) {
+    public ApiResponse<WardResponse> update(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id, @Valid @RequestBody WardRequest r) {
         return ApiResponse.success("Ward updated", mapper.toResponse(service.update(id, r.provinceId(), r.code(), r.name(), r.divisionType())));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa phường", description = "Xóa phường theo wardId.")
-    public ApiResponse<Void> delete(@PathVariable long id) {
+    public ApiResponse<Void> delete(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id) {
         service.delete(id);
         return ApiResponse.success("Ward deleted", null);
     }
 
     @GetMapping("/province/{provinceId}")
     @Operation(summary = "Liệt kê phường theo tỉnh", description = "Trả về danh sách phường thuộc provinceId chỉ định.")
-    public ApiResponse<List<WardResponse>> byProvince(@PathVariable long provinceId) {
+    public ApiResponse<List<WardResponse>> byProvince(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long provinceId) {
         return ApiResponse.success(service.getWardsByProvinceId(provinceId).stream().map(mapper::toResponse).toList());
     }
 }

@@ -29,6 +29,8 @@ When the service runs inside Compose, PostgreSQL is `postgres:5432` and the shar
 - Actuator health: <http://localhost:8083/actuator/health>
 - Kubernetes-style liveness/readiness: `/actuator/health/liveness` and `/actuator/health/readiness`
 
+Snowflake IDs in API responses, including nested references and paginated results, are JSON strings. Response DTO properties remain Java `Long` and use Jackson's per-property `ToStringSerializer`. Request body IDs are documented as decimal strings and bound to Java `Long`; URL path and query IDs are also accepted as decimal strings. IDs must be positive and within the signed 64-bit range. Clients should keep IDs as strings; prices, counts, coordinates, and pagination values remain numeric.
+
 Swagger UI and OpenAPI JSON default to disabled in the base application configuration. Docker Compose enables them by default for local development; set `SWAGGER_UI_ENABLED=false` and `OPENAPI_ENABLED=false` in `.env` when running the Compose stack in a deployment. For a host-run local process, set both variables to `true` if the docs are needed. This service currently has no Spring Security integration; access control should be handled by the deployment/network boundary until authentication is implemented separately.
 
 Actuator exposes only `health` and `info` by default. Health component details are hidden. Kafka's health contributor is disabled so a temporary broker outage does not by itself mark the HTTP service unhealthy. Database health remains part of the standard health result.
@@ -37,7 +39,7 @@ Actuator exposes only `health` and `info` by default. Health component details a
 
 The service stores `RoomStatusChanged`, `RoomPriceChanged`, and `BuildingUpdated` in `outbox_event` within the business transaction. A relay claims one row at a time, sends it with the room or building ID as key, waits for broker acknowledgement, and only then marks it published. Failed sends remain retryable. The scheduled price job queues future `RoomPriceChanged` events when the price becomes effective at 00:05 Vietnam time.
 
-The producer uses string keys and JSON string values, `acks=all`, and Kafka idempotence. The `contract.events` listener processes `ContractSigned`, `MoveOutApproved`, and `ContractEnded`. Successful processing and insertion into `processed_event` share one database transaction. Malformed envelopes go directly to `contract.events.DLT`; other failures receive three retries, one second apart. A DLT publish must be confirmed by the broker before the source record is recovered.
+The producer uses string keys and JSON string values, `acks=all`, and Kafka idempotence. Snowflake ID fields in property event payloads are JSON strings; the contract listener accepts both string IDs and legacy integral JSON IDs. The `contract.events` listener processes `ContractSigned`, `MoveOutApproved`, and `ContractEnded`. Successful processing and insertion into `processed_event` share one database transaction. Malformed envelopes go directly to `contract.events.DLT`; other failures receive three retries, one second apart. A DLT publish must be confirmed by the broker before the source record is recovered.
 
 The service Compose file does not run Kafka or initialize topics. The main `rental-system` stack owns the shared broker and initializes `property.events`, `contract.events`, `property.events.DLT`, and `contract.events.DLT` with three partitions and replication factor one. The application does not auto-create topics.
 

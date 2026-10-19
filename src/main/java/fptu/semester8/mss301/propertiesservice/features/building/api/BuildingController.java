@@ -33,12 +33,10 @@ import java.math.BigDecimal;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Positive;
-import org.springframework.validation.annotation.Validated;
 import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
-@Validated
 @RequestMapping("/api/v1/buildings")
 @Tag(name = "Tòa nhà", description = "Tạo, tìm kiếm và quản lý tòa nhà")
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
@@ -55,8 +53,8 @@ public class BuildingController {
     @ApiResponses({@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Tìm kiếm thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Tham số phân trang hoặc sort không hợp lệ")})
     public ApiResponse<Page<BuildingSearchResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long provinceId,
-            @RequestParam(required = false) Long wardId,
+            @Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string")) @RequestParam(required = false) @Positive Long provinceId,
+            @Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string")) @RequestParam(required = false) @Positive Long wardId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort) {
@@ -97,7 +95,7 @@ public class BuildingController {
     @GetMapping("/{buildingId}")
     @Operation(summary = "Lấy tòa nhà theo ID", description = "Trả về thông tin chi tiết một tòa nhà.")
     @ApiResponses({@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Tìm thấy tòa nhà"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy tòa nhà")})
-    public ApiResponse<BuildingResponse> getById(@PathVariable long buildingId) {
+    public ApiResponse<BuildingResponse> getById(@Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string")) @PathVariable @Positive long buildingId) {
         return ApiResponse.success(buildingMapper.toResponse(buildingService.getById(buildingId)));
     }
 
@@ -107,7 +105,7 @@ public class BuildingController {
     public ApiResponse<Page<BuildingResponse>> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) Long wardId,
+            @Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string")) @RequestParam(required = false) @Positive Long wardId,
             @RequestParam(defaultValue = "createdAt,desc") String sort) {
         if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
             throw new BadRequestException("page must be >= 0 and size must be between 1 and 100", "INVALID_PAGE");
@@ -119,7 +117,7 @@ public class BuildingController {
     @PutMapping("/{buildingId}")
     @Operation(summary = "Cập nhật tòa nhà", description = "Thay thế các trường có thể cập nhật bằng dữ liệu request.")
     @ApiResponses({@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Cập nhật thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Dữ liệu đầu vào không hợp lệ"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy tòa nhà hoặc phường/tỉnh tham chiếu")})
-    public ApiResponse<BuildingResponse> update(@PathVariable long buildingId,
+    public ApiResponse<BuildingResponse> update(@Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string")) @PathVariable @Positive long buildingId,
                                                 @Valid @RequestBody BuildingRequest request) {
         return ApiResponse.success("Building updated", buildingMapper.toResponse(
                 buildingService.update(buildingId, buildingMapper.toCommand(request))));
@@ -128,7 +126,7 @@ public class BuildingController {
     @DeleteMapping("/{buildingId}")
     @Operation(summary = "Xóa tòa nhà", description = "Đánh dấu tòa nhà đã xóa (soft delete).")
     @ApiResponses({@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Xóa thành công"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Không tìm thấy tòa nhà"), @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Không thể xóa tòa nhà đang có phòng")})
-    public ApiResponse<Void> delete(@PathVariable long buildingId) {
+    public ApiResponse<Void> delete(@Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string")) @PathVariable @Positive long buildingId) {
         buildingService.delete(buildingId);
         return ApiResponse.success("Building deleted", null);
     }

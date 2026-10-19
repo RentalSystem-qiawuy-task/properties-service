@@ -93,9 +93,17 @@ public class ContractEventProcessor {
 
     private static long requiredLong(JsonNode node, String field) {
         JsonNode value = node.path(field);
-        if (!value.isIntegralNumber() || !value.canConvertToLong() || value.asLong() <= 0) {
-            throw new InvalidEventException("Missing or invalid " + field);
+        if (value.isIntegralNumber() && value.canConvertToLong() && value.asLong() > 0) {
+            return value.asLong();
         }
-        return value.asLong();
+        if (value.isTextual()) {
+            try {
+                long id = Long.parseLong(value.asString());
+                if (id > 0) return id;
+            } catch (NumberFormatException ignored) {
+                // Fall through to the consistent invalid-event error.
+            }
+        }
+        throw new InvalidEventException("Missing or invalid " + field);
     }
 }
