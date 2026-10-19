@@ -14,6 +14,8 @@ public class RoomType {
     private Long id;
     @Column(nullable = false, length = 100)
     private String name;
+    @Column(name = "type_code", length = 50)
+    private String typeCode;
     @Column(columnDefinition = "TEXT")
     private String description;
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -24,15 +26,17 @@ public class RoomType {
     protected RoomType() {
     }
 
-    public RoomType(Long id, String name, String description, Instant now) {
+    public RoomType(Long id, String typeCode, String name, String description, Instant now) {
         this.id = id;
+        this.typeCode = typeCode;
         this.name = name;
         this.description = description;
         this.createdAt = now;
         this.updatedAt = now;
     }
 
-    public void update(String name, String description, Instant now) {
+    public void update(String typeCode, String name, String description, Instant now) {
+        this.typeCode = typeCode;
         this.name = name;
         this.description = description;
         this.updatedAt = now;

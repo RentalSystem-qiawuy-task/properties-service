@@ -24,7 +24,7 @@ public class RoomTypeController {
     RoomTypeMapper mapper;
 
     @PostMapping
-    @Operation(summary = "Tạo loại phòng", description = "Tạo loại phòng mới; name bắt buộc, tối đa 100 ký tự; description không bắt buộc.")
+    @Operation(summary = "Tạo loại phòng", description = "Tạo loại phòng mới; typeCode bắt buộc, tối đa 50 ký tự; name bắt buộc, tối đa 100 ký tự; description không bắt buộc.")
     public ApiResponse<RoomTypeResponse> create(@Valid @RequestBody RoomTypeRequest r) {
         return ApiResponse.success("Room type created", mapper.toResponse(service.create(r)));
     }
@@ -42,7 +42,7 @@ public class RoomTypeController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Cập nhật loại phòng", description = "Cập nhật tên và mô tả loại phòng theo ID.")
+    @Operation(summary = "Cập nhật loại phòng", description = "Cập nhật mã, tên và mô tả loại phòng theo ID.")
     public ApiResponse<RoomTypeResponse> update(@PathVariable long id, @Valid @RequestBody RoomTypeRequest r) {
         return ApiResponse.success("Room type updated", mapper.toResponse(service.update(id, r)));
     }

@@ -4,6 +4,7 @@ import java.time.Instant;
 
 public record RoomTypeResponse(
         Long id,
+        String typeCode,
         String name,
         String description,
         Instant createdAt,
