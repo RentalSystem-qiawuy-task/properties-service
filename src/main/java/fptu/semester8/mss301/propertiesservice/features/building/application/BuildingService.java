@@ -11,6 +11,7 @@ import fptu.semester8.mss301.propertiesservice.features.building.application.por
 import fptu.semester8.mss301.propertiesservice.features.building.application.port.out.BuildingSearchRepository;
 import fptu.semester8.mss301.propertiesservice.features.building.application.model.BuildingSearchItem;
 import fptu.semester8.mss301.propertiesservice.features.building.domain.Building;
+import fptu.semester8.mss301.propertiesservice.features.events.PropertyEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
@@ -36,6 +37,8 @@ public class BuildingService {
 
     BuildingSearchRepository searchRepository;
 
+    PropertyEventPublisher events;
+
     double maxSearchRadiusMeters;
 
     @Autowired
@@ -43,11 +46,13 @@ public class BuildingService {
                            BuildingReferenceRepository referenceRepository,
                            IdGenerator idGenerator,
                            BuildingSearchRepository searchRepository,
+                           PropertyEventPublisher events,
                            @Value("${building.search.max-radius-meters:50000}") double maxSearchRadiusMeters) {
         this.buildingRepository = buildingRepository;
         this.referenceRepository = referenceRepository;
         this.idGenerator = idGenerator;
         this.searchRepository = searchRepository;
+        this.events = events;
         this.maxSearchRadiusMeters = maxSearchRadiusMeters;
     }
 
@@ -88,7 +93,9 @@ public class BuildingService {
                 request.name().trim(), request.address().trim(), request.wardId(), request.provinceId(),
                 request.latitude(), request.longitude(), request.description(), Instant.now()
         );
-        return buildingRepository.save(building);
+        Building saved = buildingRepository.save(building);
+        events.buildingUpdated(saved);
+        return saved;
     }
 
     @Transactional

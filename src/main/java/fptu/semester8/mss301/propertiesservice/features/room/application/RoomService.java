@@ -6,6 +6,7 @@ import fptu.semester8.mss301.propertiesservice.features.building.application.por
 import fptu.semester8.mss301.propertiesservice.features.room.api.dto.RoomRequest;
 import fptu.semester8.mss301.propertiesservice.features.room.domain.*;
 import fptu.semester8.mss301.propertiesservice.features.room.infrastructure.persistence.RoomRepository;
+import fptu.semester8.mss301.propertiesservice.features.events.PropertyEventPublisher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -27,6 +28,8 @@ public class RoomService {
 
     IdGenerator ids;
 
+    PropertyEventPublisher events;
+
     @Transactional
     public Room create(RoomRequest r) {
         String status = normalizeStatus(r.status());
@@ -34,7 +37,9 @@ public class RoomService {
         if (rooms.existsByBuildingIdAndRoomCode(r.buildingId(), r.roomCode().trim()))
             throw new ConflictException("Room code already exists in building", "ROOM_CODE_CONFLICT");
         Instant n = Instant.now();
-        return rooms.save(new Room(ids.nextId(), r.buildingId(), r.roomTypeId(), r.roomCode().trim(), r.maxCapacity(), RoomStatus.VACANT.getValue(), r.area(), r.bedroomCount(), r.bathroomCount(), r.basePrice(), n));
+        Room room = rooms.saveAndFlush(new Room(ids.nextId(), r.buildingId(), r.roomTypeId(), r.roomCode().trim(), r.maxCapacity(), RoomStatus.VACANT.getValue(), r.area(), r.bedroomCount(), r.bathroomCount(), r.basePrice(), n));
+        events.roomStatusChanged(room, null);
+        return room;
     }
 
     @Transactional(readOnly = true)
@@ -57,8 +62,29 @@ public class RoomService {
             throw new ConflictException("Room code already exists in building", "ROOM_CODE_CONFLICT");
         if (!Objects.equals(x.getStatus(), status) && !allowed(x.getStatus(), status))
             throw new BadRequestException("Invalid room status transition", "INVALID_ROOM_STATUS_TRANSITION");
+        String previousStatus = x.getStatus();
         x.update(r.roomTypeId(), code, r.maxCapacity(), status, r.area(), r.bedroomCount(), r.bathroomCount(), r.basePrice(), Instant.now());
-        return rooms.save(x);
+        Room saved = rooms.saveAndFlush(x);
+        if (!Objects.equals(previousStatus, status)) {
+            events.roomStatusChanged(saved, previousStatus);
+        }
+        return saved;
+    }
+
+    @Transactional
+    public void changeStatusFromContract(long roomId, long buildingId, RoomStatus status) {
+        Room room = rooms.findByIdForUpdate(roomId).orElseThrow(() ->
+                new ResourceNotFoundException("Room %d was not found".formatted(roomId), "ROOM_NOT_FOUND"));
+        if (room.getBuildingId() != buildingId) {
+            throw new BadRequestException("Contract event buildingId does not match room", "CONTRACT_ROOM_BUILDING_MISMATCH");
+        }
+        String previous = room.getStatus();
+        if (previous.equals(status.getValue())) return;
+        room.update(room.getRoomTypeId(), room.getRoomCode(), room.getMaxCapacity(),
+                status.getValue(), room.getArea(), room.getBedroomCount(),
+                room.getBathroomCount(), room.getBasePrice(), Instant.now());
+        rooms.saveAndFlush(room);
+        events.roomStatusChanged(room, previous);
     }
 
     @Transactional
