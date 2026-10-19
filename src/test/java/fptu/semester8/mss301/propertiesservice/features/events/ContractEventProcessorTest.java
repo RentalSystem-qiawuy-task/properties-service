@@ -34,6 +34,14 @@ class ContractEventProcessorTest {
     }
 
     @Test
+    void signedAcceptsLargeStringIdsWithoutPrecisionLoss() {
+        String raw = event("ContractSigned", "").replace("\"contractId\":7,\"roomId\":12,\"buildingId\":34",
+                "\"contractId\":\"898785309339156482\",\"roomId\":\"898785309339156480\",\"buildingId\":\"898785309339156481\"");
+        processor.process(raw);
+        verify(rooms).changeStatusFromContract(898785309339156480L, 898785309339156481L, RoomStatus.OCCUPIED);
+    }
+
+    @Test
     void moveOutApprovedMakesRoomUpcomingVacant() {
         processor.process(event("MoveOutApproved", ""));
         verify(rooms).changeStatusFromContract(12L, 34L, RoomStatus.UPCOMING_VACANT);
@@ -64,6 +72,14 @@ class ContractEventProcessorTest {
     @Test
     void invalidEventFailsBeforeProcessedMarker() {
         assertThrows(InvalidEventException.class, () -> processor.process("{\"eventType\":\"ContractSigned\"}"));
+        verifyNoInteractions(jdbc, rooms);
+    }
+
+    @Test
+    void outOfRangeStringIdFailsBeforeProcessedMarker() {
+        String raw = event("ContractSigned", "").replace("\"contractId\":7,\"roomId\":12,\"buildingId\":34",
+                "\"contractId\":\"7\",\"roomId\":\"9223372036854775808\",\"buildingId\":\"34\"");
+        assertThrows(InvalidEventException.class, () -> processor.process(raw));
         verifyNoInteractions(jdbc, rooms);
     }
 

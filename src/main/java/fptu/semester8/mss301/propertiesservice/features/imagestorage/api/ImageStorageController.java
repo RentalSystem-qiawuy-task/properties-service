@@ -3,6 +3,7 @@ package fptu.semester8.mss301.propertiesservice.features.imagestorage.api;
 import fptu.exe202.signify.apiresponse.response.ApiResponse;
 import fptu.semester8.mss301.propertiesservice.features.imagestorage.application.ImageStorageService;
 import fptu.semester8.mss301.propertiesservice.features.imagestorage.infrastructure.StorageObject;
+import jakarta.validation.constraints.Positive;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,7 +34,7 @@ public class ImageStorageController {
     )
     @Operation(summary = "Tải ảnh tòa nhà", description = "Tải một ảnh multipart/form-data lên thư mục building và gắn với buildingId. Phần file phải có tên file; giới hạn kích thước cấu hình storage.image.max-size, mặc định 5 MiB.")
     public ApiResponse<StorageObject> uploadBuildingImage(
-            @Parameter(description = "ID tòa nhà sở hữu ảnh", example = "123456789") @PathVariable long buildingId,
+            @Parameter(description = "ID tòa nhà sở hữu ảnh dạng chuỗi", schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long buildingId,
             @Parameter(description = "Tệp ảnh gửi dưới dạng multipart part tên file", required = true)
             @RequestPart("file") MultipartFile file
     ) {
@@ -46,7 +47,7 @@ public class ImageStorageController {
     )
     @Operation(summary = "Tải ảnh phòng", description = "Tải một ảnh multipart/form-data lên thư mục room và gắn với roomId. Giới hạn kích thước mỗi ảnh được cấu hình qua storage.image.max-size, mặc định 5 MiB.")
     public ApiResponse<StorageObject> uploadRoomImage(
-            @Parameter(description = "ID phòng sở hữu ảnh", example = "123456789") @PathVariable long roomId,
+            @Parameter(description = "ID phòng sở hữu ảnh dạng chuỗi", schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long roomId,
             @Parameter(description = "Tệp ảnh gửi dưới dạng multipart part tên file", required = true)
             @RequestPart("file") MultipartFile file
     ) {

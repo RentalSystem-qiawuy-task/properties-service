@@ -5,6 +5,7 @@ import fptu.semester8.mss301.propertiesservice.features.province.api.dto.*;
 import fptu.semester8.mss301.propertiesservice.features.province.application.ProvinceService;
 import fptu.semester8.mss301.propertiesservice.features.province.mapper.ProvinceMapper;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -34,19 +35,19 @@ public class ProvinceController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Lấy tỉnh theo ID", description = "Trả về thông tin tỉnh theo provinceId.")
-    public ApiResponse<ProvinceResponse> get(@PathVariable long id) {
+    public ApiResponse<ProvinceResponse> get(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id) {
         return ApiResponse.success(mapper.toResponse(service.get(id)));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Cập nhật tỉnh", description = "Cập nhật mã, tên và loại đơn vị hành chính của tỉnh.")
-    public ApiResponse<ProvinceResponse> update(@PathVariable long id, @Valid @RequestBody ProvinceRequest r) {
+    public ApiResponse<ProvinceResponse> update(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id, @Valid @RequestBody ProvinceRequest r) {
         return ApiResponse.success("Province updated", mapper.toResponse(service.update(id, r.code(), r.name(), r.divisionType())));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa tỉnh", description = "Xóa tỉnh theo provinceId.")
-    public ApiResponse<Void> delete(@PathVariable long id) {
+    public ApiResponse<Void> delete(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id) {
         service.delete(id);
         return ApiResponse.success("Province deleted", null);
     }

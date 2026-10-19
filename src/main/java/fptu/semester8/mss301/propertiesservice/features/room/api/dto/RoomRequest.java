@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 
 @Schema(description = "Dữ liệu tạo hoặc cập nhật phòng")
 public record RoomRequest(
-        @Schema(description = "ID tòa nhà", example = "123456789") @NotNull Long buildingId,
-        @Schema(description = "ID loại phòng", example = "987654321") @NotNull Long roomTypeId,
+        @Schema(type = "string", description = "ID tòa nhà dạng chuỗi số dương", example = "898785309339156480") @NotNull @Positive Long buildingId,
+        @Schema(type = "string", description = "ID loại phòng dạng chuỗi số dương", example = "898785309339156481") @NotNull @Positive Long roomTypeId,
         @Schema(description = "Mã phòng, bắt buộc, tối đa 50 ký tự", example = "A-101") @NotBlank @Size(max = 50) String roomCode,
         @Schema(description = "Sức chứa tối đa, ít nhất 1 người", example = "4") @NotNull @Min(1) Integer maxCapacity,
         @Schema(description = "Diện tích, phải lớn hơn 0", example = "35.5") @NotNull @DecimalMin(value = "0.01") BigDecimal area,

@@ -27,13 +27,15 @@ class PropertyEventPublisherTest {
 
     @Test
     void buildingUpdatedUsesBuildingKeyAndDocumentedPayload() {
-        publisher.buildingUpdated(new Building(44L, "North", "12 Main", 7L, 8L,
+        publisher.buildingUpdated(new Building(898785309339156480L, "North", "12 Main", 7L, 8L,
                 new BigDecimal("10.0"), new BigDecimal("106.0"), null, Instant.now()));
-        JsonNode event = capturedEvent("44", "BuildingUpdated");
-        assertEquals(44, event.path("payload").path("buildingId").asLong());
+        JsonNode event = capturedEvent("898785309339156480", "BuildingUpdated");
+        assertEquals("898785309339156480", event.path("payload").path("buildingId").asString());
+        assertTrue(event.path("payload").path("buildingId").isTextual());
         assertEquals("North", event.path("payload").path("name").asString());
         assertEquals("12 Main", event.path("payload").path("address").asString());
-        assertEquals(7, event.path("payload").path("wardId").asLong());
+        assertEquals("7", event.path("payload").path("wardId").asString());
+        assertTrue(event.path("payload").path("wardId").isTextual());
     }
 
     @Test
@@ -41,7 +43,8 @@ class PropertyEventPublisherTest {
         publisher.roomPriceChanged(new RoomPrice(11L, 12L, new BigDecimal("5000000"),
                 LocalDate.of(2030, 1, 1), null, Instant.now()));
         JsonNode event = capturedEvent("12", "RoomPriceChanged");
-        assertEquals(12, event.path("payload").path("roomId").asLong());
+        assertEquals("12", event.path("payload").path("roomId").asString());
+        assertTrue(event.path("payload").path("price").isNumber());
         assertEquals("5000000", event.path("payload").path("price").asString());
         assertEquals("2030-01-01", event.path("payload").path("effectiveFrom").asString());
     }
@@ -74,7 +77,8 @@ class PropertyEventPublisherTest {
         JsonNode event = capturedEvent("12", "RoomStatusChanged");
         assertEquals("OCCUPIED", event.path("payload").path("status").asString());
         assertEquals("VACANT", event.path("payload").path("previousStatus").asString());
-        assertEquals(44, event.path("payload").path("buildingId").asLong());
+        assertEquals("44", event.path("payload").path("buildingId").asString());
+        assertTrue(event.path("payload").path("buildingId").isTextual());
         assertEquals("A101", event.path("payload").path("roomNumber").asString());
         assertEquals("Studio", event.path("payload").path("roomTypeName").asString());
     }

@@ -6,6 +6,7 @@ import fptu.semester8.mss301.propertiesservice.features.room.api.dto.*;
 import fptu.semester8.mss301.propertiesservice.features.room.application.RoomService;
 import fptu.semester8.mss301.propertiesservice.features.room.mapper.RoomMapper;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -31,13 +32,13 @@ public class RoomController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Lấy phòng theo ID", description = "Trả về chi tiết phòng; ID không tồn tại sẽ tạo lỗi không tìm thấy.")
-    public ApiResponse<RoomResponse> get(@PathVariable long id) {
+    public ApiResponse<RoomResponse> get(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id) {
         return ApiResponse.success(mapper.toResponse(service.get(id)));
     }
 
     @GetMapping
     @Operation(summary = "Liệt kê phòng", description = "Danh sách phân trang, có thể lọc theo buildingId. page mặc định 0, size mặc định 20 (tối đa 100), sort mặc định createdAt,desc; trường sort: createdAt, updatedAt, roomCode, status, basePrice.")
-    public ApiResponse<Page<RoomResponse>> list(@RequestParam(required = false) Long buildingId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size, @RequestParam(defaultValue = "createdAt,desc") String sort) {
+    public ApiResponse<Page<RoomResponse>> list(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @RequestParam(required = false) @Positive Long buildingId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size, @RequestParam(defaultValue = "createdAt,desc") String sort) {
         if (page < 0 || size < 1 || size > 100) throw new BadRequestException("invalid pagination", "INVALID_PAGE");
         String[] s = sort.split(",", 2);
         if (!s[0].matches("createdAt|updatedAt|roomCode|status|basePrice"))
@@ -47,19 +48,19 @@ public class RoomController {
 
     @GetMapping("/building/{buildingId}")
     @Operation(summary = "Liệt kê phòng theo tòa nhà", description = "Trả về phòng thuộc tòa nhà chỉ định, phân trang với page mặc định 0 và size mặc định 20.")
-    public ApiResponse<Page<RoomResponse>> byBuilding(@PathVariable long buildingId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+    public ApiResponse<Page<RoomResponse>> byBuilding(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long buildingId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         return ApiResponse.success(service.list(buildingId, PageRequest.of(page, size)).map(mapper::toResponse));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Cập nhật phòng", description = "Cập nhật thông tin phòng theo ID bằng RoomRequest.")
-    public ApiResponse<RoomResponse> update(@PathVariable long id, @Valid @RequestBody RoomRequest r) {
+    public ApiResponse<RoomResponse> update(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id, @Valid @RequestBody RoomRequest r) {
         return ApiResponse.success("Room updated", mapper.toResponse(service.update(id, r)));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa phòng", description = "Xóa phòng theo ID.")
-    public ApiResponse<Void> delete(@PathVariable long id) {
+    public ApiResponse<Void> delete(@io.swagger.v3.oas.annotations.Parameter(schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", example = "898785309339156480")) @PathVariable @Positive long id) {
         service.delete(id);
         return ApiResponse.success("Room deleted", null);
     }
