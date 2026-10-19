@@ -2,9 +2,9 @@
 
 ## Local development
 
-The project root `.env` file is used by Docker Compose. Do not commit it. Copy `.env.example` to `.env` only when creating a local environment for the first time, then set a local database password.
+The project root `.env` file is used by Docker Compose. Do not commit it. Copy `.env.example` to `.env` only when creating a local environment for the first time, then set local database and storage credentials. The default database is `property_db`.
 
-Start PostgreSQL/PostGIS, Kafka, and the service:
+Start the main `rental-system` stack first so its shared Kafka broker is running, then start PostgreSQL/PostGIS and this service:
 
 ```powershell
 docker compose up -d --build
@@ -20,7 +20,7 @@ Get-Content .env | Where-Object { $_ -match '^\s*[A-Za-z_][A-Za-z0-9_]*\s*=' } |
 .\gradlew.bat bootRun
 ```
 
-When the service runs inside Compose, PostgreSQL is `postgres:5432` and Kafka is `kafka:29092`; `docker-compose.yaml` sets the Kafka override for the container.
+When the service runs inside Compose, PostgreSQL is `postgres:5432` and the shared Kafka broker is `kafka:9092`; `docker-compose.yaml` sets the Kafka override for the container. The `rental-net` external network must already exist, which the main `rental-system` stack creates.
 
 ## HTTP endpoints
 
@@ -35,19 +35,23 @@ Actuator exposes only `health` and `info` by default. Health component details a
 
 ## Kafka setup
 
-The project currently has no Kafka event DTOs, producers, or `@KafkaListener` consumers. No topic, producer call, or business event is created by this configuration.
+The service stores `RoomStatusChanged`, `RoomPriceChanged`, and `BuildingUpdated` in `outbox_event` within the business transaction. A relay claims one row at a time, sends it with the room or building ID as key, waits for broker acknowledgement, and only then marks it published. Failed sends remain retryable. The scheduled price job queues future `RoomPriceChanged` events when the price becomes effective at 00:05 Vietnam time.
 
-The auto-configured producer uses string keys and values, acknowledgements from all in-sync replicas, retries, and idempotent delivery. The consumer uses string keys and values, the configured group, earliest offset reset by default, and disabled auto-commit. Listener containers acknowledge each record after successful processing. Most listener failures receive three retries with a one-second delay; Spring-classified fatal deserialization/conversion failures may go directly to recovery. If recovery fails, the error handler throws so the record is not silently acknowledged. Because there is no agreed event contract or DLT topic provisioned, a repeatedly failing record can block its partition until the issue is addressed. Define a compatible event contract and provision a DLT before changing that policy.
+The producer uses string keys and JSON string values, `acks=all`, and Kafka idempotence. The `contract.events` listener processes `ContractSigned`, `MoveOutApproved`, and `ContractEnded`. Successful processing and insertion into `processed_event` share one database transaction. Malformed envelopes go directly to `contract.events.DLT`; other failures receive three retries, one second apart. A DLT publish must be confirmed by the broker before the source record is recovered.
+
+The service Compose file does not run Kafka or initialize topics. The main `rental-system` stack owns the shared broker and initializes `property.events`, `contract.events`, `property.events.DLT`, and `contract.events.DLT` with three partitions and replication factor one. The application does not auto-create topics.
 
 Useful local checks:
 
 ```powershell
 docker compose ps
-docker compose logs kafka --tail 100
-docker compose exec kafka /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server kafka:29092
+docker compose -f ..\fdepartment-backend\rental-system-backend\infra\docker-compose.yml logs kafka --tail 100
+docker compose -f ..\fdepartment-backend\rental-system-backend\infra\docker-compose.yml exec kafka /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server kafka:9092
+docker compose -f ..\fdepartment-backend\rental-system-backend\infra\docker-compose.yml exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic property.events
+docker compose -f ..\fdepartment-backend\rental-system-backend\infra\docker-compose.yml exec kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic contract.events
 ```
 
-These checks verify broker readiness. End-to-end message delivery should be checked after the service's event contract and listener/producer are implemented.
+These checks verify broker readiness and topic configuration. The Kafka integration test exercises message delivery when Testcontainers can reach the broker from the host.
 
 ## Environment variables
 
@@ -56,10 +60,16 @@ These checks verify broker readiness. End-to-end message delivery should be chec
 | `SERVER_PORT` | `8083` | HTTP server port |
 | `SHUTDOWN_TIMEOUT` | `20s` | Graceful shutdown wait |
 | `DB_HOST`, `DB_PORT` | `localhost`, `5433` | PostgreSQL host and host-published port |
-| `DB_NAME`, `SCHEMA_NAME` | `RoomRental`, `properties_service` | Database and schema |
+| `DB_NAME`, `SCHEMA_NAME` | `property_db`, `properties_service` | Database and schema |
 | `DB_USER`, `DB_PASSWORD` | `postgres`, local placeholder | Database credentials; inject real credentials through deployment secrets |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Broker address for a process running on the host |
-| `KAFKA_CONSUMER_GROUP_ID` | `properties-service` | Consumer group |
+| `KAFKA_DOCKER_BOOTSTRAP_SERVERS` | `kafka:9092` | Shared broker address passed by Compose to the service container |
+| `KAFKA_CONSUMER_GROUP_ID` | `property-service` | Consumer group |
+| `PROPERTY_EVENTS_TOPIC`, `CONTRACT_EVENTS_TOPIC` | `property.events`, `contract.events` | Outgoing and incoming topics |
+| `KAFKA_CONSUMER_RETRY_INTERVAL_MS`, `KAFKA_CONSUMER_RETRY_COUNT` | `1000`, `3` | Listener retries before DLT |
+| `KAFKA_SEND_TIMEOUT_SECONDS` | `10` | Broker acknowledgement timeout |
+| `OUTBOX_POLL_DELAY_MS`, `OUTBOX_BATCH_SIZE`, `OUTBOX_LEASE_SECONDS`, `OUTBOX_RETRY_DELAY_SECONDS` | `1000`, `100`, `30`, `5` | Relay polling, claim lease and resend delay |
+| `ROOM_PRICE_ANNOUNCEMENT_CRON` | `0 5 0 * * *` | Scheduled future price event, Vietnam time |
 | `KAFKA_AUTO_OFFSET_RESET` | `earliest` | Start position when the group has no committed offset |
 | `KAFKA_PRODUCER_RETRIES` | `10` | Producer retry count; idempotence is enabled |
 | `OPENAPI_ENABLED`, `SWAGGER_UI_ENABLED` | `true` | Enable OpenAPI JSON and Swagger UI |
@@ -68,7 +78,7 @@ These checks verify broker readiness. End-to-end message delivery should be chec
 | `EUREKA_CLIENT_ENABLED`, `EUREKA_SERVER_URL` | `false`, localhost URL | Optional service discovery |
 | `SNOWFLAKE_GENERATOR_ID` | `0` | Unique Snowflake generator ID per service instance |
 
-The Compose service receives `kafka:29092` for Kafka and `postgres:5432` for PostgreSQL. Do not pass host-side `localhost` addresses to containers: inside a container, `localhost` refers to that container itself. The current Compose Kafka listener uses plaintext for local development only; configure broker TLS/SASL and inject credentials through deployment secrets before using a secured production cluster.
+The Compose service receives `kafka:9092` for Kafka and `postgres:5432` for PostgreSQL. Do not pass host-side `localhost` addresses to containers: inside a container, `localhost` refers to that container itself. The shared Compose Kafka listener uses plaintext for local development only; configure broker TLS/SASL and inject credentials through deployment secrets before using a secured production cluster.
 
 ## Build and run
 

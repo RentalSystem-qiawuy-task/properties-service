@@ -10,6 +10,7 @@ import fptu.semester8.mss301.propertiesservice.features.building.domain.Building
 import fptu.semester8.mss301.propertiesservice.features.building.application.port.out.BuildingReferenceRepository;
 import fptu.semester8.mss301.propertiesservice.features.building.application.port.out.BuildingRepository;
 import fptu.semester8.mss301.propertiesservice.features.building.application.port.out.BuildingSearchRepository;
+import fptu.semester8.mss301.propertiesservice.features.events.PropertyEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
@@ -43,7 +44,9 @@ class BuildingServiceTest {
         referenceRepository = mock(BuildingReferenceRepository.class);
         idGenerator = mock(IdGenerator.class);
         searchRepository = mock(BuildingSearchRepository.class);
-        service = new BuildingService(buildingRepository, referenceRepository, idGenerator, searchRepository, 50_000);
+        when(buildingRepository.save(any(Building.class))).thenAnswer(call -> call.getArgument(0));
+        service = new BuildingService(buildingRepository, referenceRepository, idGenerator,
+                searchRepository, mock(PropertyEventPublisher.class), 50_000);
     }
 
     @Test
