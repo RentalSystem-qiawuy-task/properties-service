@@ -9,6 +9,8 @@
 /target/
 /build/
 /out/
+/.gradle/
+/gradle-user-home/
 
 # ===== IDE =====
 .idea/
