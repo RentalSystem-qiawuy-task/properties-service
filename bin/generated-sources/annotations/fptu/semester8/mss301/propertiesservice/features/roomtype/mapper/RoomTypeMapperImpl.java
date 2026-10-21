@@ -8,31 +8,33 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-10-16T22:36:54+0700",
-    comments = "version: 1.6.3, compiler: Eclipse JDT (IDE) 3.46.100.v20260826-1225, environment: Java 21.0.12.1 (Eclipse Adoptium)"
+    date = "2026-10-21T18:15:11+0700",
+    comments = "version: 1.6.3, compiler: Eclipse JDT (IDE) 3.46.200.v20261008-1115, environment: Java 25.0.4.1 (Eclipse Adoptium)"
 )
 @Component
 public class RoomTypeMapperImpl implements RoomTypeMapper {
 
     @Override
-    public RoomTypeResponse toResponse(RoomType type) {
-        if ( type == null ) {
+    public RoomTypeResponse toResponse(RoomType roomType) {
+        if ( roomType == null ) {
             return null;
         }
 
         Long id = null;
+        String typeCode = null;
         String name = null;
         String description = null;
         Instant createdAt = null;
         Instant updatedAt = null;
 
-        id = type.getId();
-        name = type.getName();
-        description = type.getDescription();
-        createdAt = type.getCreatedAt();
-        updatedAt = type.getUpdatedAt();
+        id = roomType.getId();
+        typeCode = roomType.getTypeCode();
+        name = roomType.getName();
+        description = roomType.getDescription();
+        createdAt = roomType.getCreatedAt();
+        updatedAt = roomType.getUpdatedAt();
 
-        RoomTypeResponse roomTypeResponse = new RoomTypeResponse( id, name, description, createdAt, updatedAt );
+        RoomTypeResponse roomTypeResponse = new RoomTypeResponse( id, typeCode, name, description, createdAt, updatedAt );
 
         return roomTypeResponse;
     }

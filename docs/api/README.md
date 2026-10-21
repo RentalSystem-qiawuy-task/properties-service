@@ -10,6 +10,7 @@
 | RoomController | [rooms.md](rooms.md) |
 | RoomPriceController | [room-prices.md](room-prices.md) |
 | RoomTypeController | [room-types.md](room-types.md) |
+| RoomOccupantController | [room-occupants.md](room-occupants.md) |
 | WardController | [wards.md](wards.md) |
 
 ## Quy ước
