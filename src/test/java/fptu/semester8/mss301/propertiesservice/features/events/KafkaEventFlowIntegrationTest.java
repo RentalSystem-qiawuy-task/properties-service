@@ -1,6 +1,6 @@
 package fptu.semester8.mss301.propertiesservice.features.events;
 
-import fptu.semester8.mss301.propertiesservice.features.room.application.RoomService;
+import fptu.semester8.mss301.propertiesservice.features.roomoccupant.application.OccupantProjectionService;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -116,13 +116,12 @@ class KafkaEventFlowIntegrationTest {
                             record -> record.value().equals("broken-json")));
                 }
 
-                RoomService rooms = mock(RoomService.class);
+                OccupantProjectionService rooms = mock(OccupantProjectionService.class);
                 var processor = new ContractEventProcessor(new JsonMapper(), jdbc, rooms);
                 UUID contractId = UUID.randomUUID();
                 String signed = signed(contractId);
                 doThrow(new IllegalStateException("domain failed")).when(rooms)
-                        .changeStatusFromContract(12L, 34L,
-                                fptu.semester8.mss301.propertiesservice.features.room.domain.RoomStatus.OCCUPIED);
+                        .apply(org.mockito.ArgumentMatchers.any());
                 assertThrows(IllegalStateException.class,
                         () -> tx.executeWithoutResult(status -> processor.process(signed)));
                 assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM processed_event WHERE event_id = ?",
@@ -130,8 +129,7 @@ class KafkaEventFlowIntegrationTest {
                 reset(rooms);
                 tx.executeWithoutResult(status -> processor.process(signed));
                 tx.executeWithoutResult(status -> processor.process(signed));
-                verify(rooms, times(1)).changeStatusFromContract(12L, 34L,
-                        fptu.semester8.mss301.propertiesservice.features.room.domain.RoomStatus.OCCUPIED);
+                verify(rooms, times(1)).apply(org.mockito.ArgumentMatchers.any());
                 assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM processed_event WHERE event_id = ?",
                         Integer.class, contractId));
             } finally {
@@ -144,7 +142,7 @@ class KafkaEventFlowIntegrationTest {
     private static String signed(UUID id) {
         return "{\"eventId\":\"" + id + "\",\"eventType\":\"ContractSigned\","
                 + "\"version\":1,\"occurredAt\":\"2026-10-19T00:00:00Z\","
-                + "\"payload\":{\"contractId\":7,\"roomId\":12,\"buildingId\":34}}";
+                + "\"payload\":{\"contractId\":7,\"roomId\":12,\"buildingId\":34,\"sourceRevision\":1,\"startDate\":\"2026-10-19\"}}";
     }
 
     private static boolean received(KafkaConsumer<String, String> consumer, String topic,

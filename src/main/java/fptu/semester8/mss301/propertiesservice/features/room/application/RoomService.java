@@ -55,7 +55,8 @@ public class RoomService {
     @Transactional
     public Room update(long id, RoomRequest r) {
         String status = normalizeStatus(r.status());
-        Room x = get(id);
+        Room x = rooms.findByIdForUpdate(id).orElseThrow(() ->
+                new ResourceNotFoundException("Room %d was not found".formatted(id), "ROOM_NOT_FOUND"));
         validateBuilding(r.buildingId());
         String code = r.roomCode().trim();
         if (rooms.existsByBuildingIdAndRoomCodeAndIdNot(r.buildingId(), code, id))
@@ -69,22 +70,6 @@ public class RoomService {
             events.roomStatusChanged(saved, previousStatus);
         }
         return saved;
-    }
-
-    @Transactional
-    public void changeStatusFromContract(long roomId, long buildingId, RoomStatus status) {
-        Room room = rooms.findByIdForUpdate(roomId).orElseThrow(() ->
-                new ResourceNotFoundException("Room %d was not found".formatted(roomId), "ROOM_NOT_FOUND"));
-        if (room.getBuildingId() != buildingId) {
-            throw new BadRequestException("Contract event buildingId does not match room", "CONTRACT_ROOM_BUILDING_MISMATCH");
-        }
-        String previous = room.getStatus();
-        if (previous.equals(status.getValue())) return;
-        room.update(room.getRoomTypeId(), room.getRoomCode(), room.getMaxCapacity(),
-                status.getValue(), room.getArea(), room.getBedroomCount(),
-                room.getBathroomCount(), room.getBasePrice(), Instant.now());
-        rooms.saveAndFlush(room);
-        events.roomStatusChanged(room, previous);
     }
 
     @Transactional

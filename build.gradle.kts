@@ -37,6 +37,8 @@ dependencies {
     // REST API và validation
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    // Scoped to occupant reads; uses the system's trusted Gateway identity headers.
+    implementation("org.springframework.boot:spring-boot-starter-security")
 
     // PostgreSQL + JPA
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -82,6 +84,8 @@ dependencies {
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
     testImplementation("org.springframework.boot:spring-boot-starter-validation-test")
 

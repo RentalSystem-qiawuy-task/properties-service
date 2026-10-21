@@ -1,93 +1,56 @@
 package fptu.semester8.mss301.propertiesservice.features.events;
 
-import fptu.semester8.mss301.propertiesservice.features.room.application.RoomService;
-import fptu.semester8.mss301.propertiesservice.features.room.domain.RoomStatus;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import fptu.semester8.mss301.propertiesservice.features.roomoccupant.application.OccupantProjectionService;
+import org.junit.jupiter.api.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import tools.jackson.databind.json.JsonMapper;
-
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class ContractEventProcessorTest {
-    private JdbcTemplate jdbc;
-    private RoomService rooms;
-    private ContractEventProcessor processor;
-
-    @BeforeEach
-    void setUp() {
-        jdbc = mock(JdbcTemplate.class);
-        rooms = mock(RoomService.class);
-        processor = new ContractEventProcessor(new JsonMapper(), jdbc, rooms);
-        when(jdbc.update(anyString(), any(UUID.class))).thenReturn(1);
+    JdbcTemplate jdbc = mock(JdbcTemplate.class);
+    OccupantProjectionService projection = mock(OccupantProjectionService.class);
+    ContractEventProcessor processor = new ContractEventProcessor(new JsonMapper(), jdbc, projection);
+    @BeforeEach void setup() { when(jdbc.update(anyString(), any(UUID.class))).thenReturn(1); }
+    @Test void addedAcceptsStringIdsWithoutPrecisionLoss() {
+        processor.process(event());
+        verify(projection).apply(argThat(e -> e.assignmentId() == 898785309339156482L && e.customerId() == 77 && e.revision() == 1));
     }
-
-    @Test
-    void signedOccupiesRoom() {
-        processor.process(event("ContractSigned", ""));
-        verify(rooms).changeStatusFromContract(12L, 34L, RoomStatus.OCCUPIED);
-    }
-
-    @Test
-    void signedAcceptsLargeStringIdsWithoutPrecisionLoss() {
-        String raw = event("ContractSigned", "").replace("\"contractId\":7,\"roomId\":12,\"buildingId\":34",
-                "\"contractId\":\"898785309339156482\",\"roomId\":\"898785309339156480\",\"buildingId\":\"898785309339156481\"");
-        processor.process(raw);
-        verify(rooms).changeStatusFromContract(898785309339156480L, 898785309339156481L, RoomStatus.OCCUPIED);
-    }
-
-    @Test
-    void moveOutApprovedMakesRoomUpcomingVacant() {
-        processor.process(event("MoveOutApproved", ""));
-        verify(rooms).changeStatusFromContract(12L, 34L, RoomStatus.UPCOMING_VACANT);
-    }
-
-    @Test
-    void endedWithoutNextContractVacatesRoom() {
-        processor.process(event("ContractEnded", ",\"nextContractExists\":false"));
-        verify(rooms).changeStatusFromContract(12L, 34L, RoomStatus.VACANT);
-    }
-
-    @Test
-    void endedWithNextContractKeepsRoomOccupied() {
-        processor.process(event("ContractEnded", ",\"nextContractExists\":true"));
-        verify(rooms).changeStatusFromContract(12L, 34L, RoomStatus.OCCUPIED);
-        verify(rooms, never()).changeStatusFromContract(12L, 34L, RoomStatus.VACANT);
-    }
-
-    @Test
-    void duplicateDoesNotChangeRoomAgain() {
+    @Test void duplicateDoesNotMutateAgain() {
         when(jdbc.update(anyString(), any(UUID.class))).thenReturn(1, 0);
-        String raw = event("ContractSigned", "");
-        processor.process(raw);
-        processor.process(raw);
-        verify(rooms, times(1)).changeStatusFromContract(12L, 34L, RoomStatus.OCCUPIED);
+        String message = event();
+        processor.process(message);
+        processor.process(message);
+        verify(projection, times(1)).apply(any());
     }
-
-    @Test
-    void invalidEventFailsBeforeProcessedMarker() {
-        assertThrows(InvalidEventException.class, () -> processor.process("{\"eventType\":\"ContractSigned\"}"));
-        verifyNoInteractions(jdbc, rooms);
+    @Test void malformedPayloadDoesNotRecordMarker() {
+        assertThrows(InvalidEventException.class, () -> processor.process(event().replace("\"sourceRevision\":1", "\"sourceRevision\":0")));
+        verifyNoInteractions(jdbc, projection);
     }
-
-    @Test
-    void outOfRangeStringIdFailsBeforeProcessedMarker() {
-        String raw = event("ContractSigned", "").replace("\"contractId\":7,\"roomId\":12,\"buildingId\":34",
-                "\"contractId\":\"7\",\"roomId\":\"9223372036854775808\",\"buildingId\":\"34\"");
-        assertThrows(InvalidEventException.class, () -> processor.process(raw));
-        verifyNoInteractions(jdbc, rooms);
+    @Test void missingRevisionIsQuarantinedRatherThanUsingTimestampOrdering() {
+        assertThrows(InvalidEventException.class, () -> processor.process(event().replace(",\"sourceRevision\":1", "")));
+        verifyNoInteractions(jdbc, projection);
     }
-
-    private static String event(String type, String extraPayloadFields) {
-        return "{\"eventId\":\"%s\",\"eventType\":\"%s\",\"version\":1,"
-                .formatted(UUID.randomUUID(), type)
-                + "\"occurredAt\":\"2026-10-19T00:00:00Z\",\"payload\":{"
-                + "\"contractId\":7,\"roomId\":12,\"buildingId\":34"
-                + extraPayloadFields + "}}";
+    @Test void invalidDateAndAssignmentIdFailBeforeMarker() {
+        assertThrows(InvalidEventException.class, () -> processor.process(event().replace("2026-10-21", "2026-19-99")));
+        assertThrows(InvalidEventException.class, () -> processor.process(event().replace("898785309339156482", "9223372036854775808")));
+        verifyNoInteractions(jdbc, projection);
+    }
+    @Test void unrelatedEventsIgnored() {
+        processor.process("{\"eventType\":\"InvoiceIssued\"}");
+        verifyNoInteractions(jdbc, projection);
+    }
+    @Test void failuresPropagateToKafkaRetryHandler() {
+        doThrow(new IllegalStateException("missing prerequisite")).when(projection).apply(any());
+        assertThrows(IllegalStateException.class, () -> processor.process(event()));
+    }
+    private String event() {
+        return """
+                {"eventId":"%s","eventType":"TenantAdded","version":1,"occurredAt":"2026-10-21T00:00:00Z",
+                 "payload":{"contractId":7,"roomId":12,"contractTenantId":"898785309339156482",
+                 "customerId":77,"joinedAt":"2026-10-21","sourceRevision":1}}
+                """.formatted(UUID.randomUUID());
     }
 }
