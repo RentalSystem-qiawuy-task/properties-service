@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 @Component
 public class R2ObjectStorage implements ObjectStorage {
@@ -29,5 +30,10 @@ public class R2ObjectStorage implements ObjectStorage {
         String baseUrl = properties.publicBaseUrl();
         String url = baseUrl == null || baseUrl.isBlank() ? key : baseUrl.replaceAll("/+$", "") + "/" + key;
         return new StorageObject(key, url, contentType, contentLength);
+    }
+
+    @Override
+    public void delete(String key) {
+        s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
     }
 }
