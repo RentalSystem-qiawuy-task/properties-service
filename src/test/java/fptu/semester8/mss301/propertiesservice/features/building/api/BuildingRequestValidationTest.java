@@ -15,7 +15,7 @@ class BuildingRequestValidationTest {
 
     @Test
     void acceptsCoordinatesWithinSupportedRanges() {
-        var request = new BuildingRequest("Building", "Address", 1L,
+        var request = new BuildingRequest("Building", "Address", 1L, 1L,
                 new BigDecimal("90"), new BigDecimal("180"), null);
 
         assertTrue(validator.validate(request).isEmpty());
@@ -23,7 +23,7 @@ class BuildingRequestValidationTest {
 
     @Test
     void rejectsCoordinatesOutsideSupportedRanges() {
-        var request = new BuildingRequest("Building", "Address", 1L,
+        var request = new BuildingRequest("Building", "Address", 1L, 1L,
                 new BigDecimal("90.0001"), new BigDecimal("-180.0001"), null);
 
         assertFalse(validator.validate(request).isEmpty());

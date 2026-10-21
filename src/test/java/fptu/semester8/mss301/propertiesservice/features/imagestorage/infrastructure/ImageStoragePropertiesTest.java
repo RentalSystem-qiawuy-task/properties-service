@@ -15,22 +15,12 @@ class ImageStoragePropertiesTest {
     void bindsStoragePropertiesAndDefaultImageSize() {
         contextRunner.withPropertyValues(
                 "storage.provider=r2",
-                "storage.public-base-url=https://images.example.test",
-                "storage.bucket=properties",
-                "storage.endpoint=https://r2.example.test",
-                "storage.region=auto",
-                "storage.access-key=access",
-                "storage.secret-key=secret"
+                "storage.public-base-url=https://images.example.test"
         ).run(context -> {
             assertThat(context).hasNotFailed();
             var properties = context.getBean(ImageStorageProperties.class);
             assertThat(properties.provider()).isEqualTo("r2");
             assertThat(properties.publicBaseUrl()).isEqualTo("https://images.example.test");
-            assertThat(properties.bucket()).isEqualTo("properties");
-            assertThat(properties.endpoint()).isEqualTo("https://r2.example.test");
-            assertThat(properties.region()).isEqualTo("auto");
-            assertThat(properties.accessKey()).isEqualTo("access");
-            assertThat(properties.secretKey()).isEqualTo("secret");
             assertThat(properties.maxSize()).isEqualTo(5_242_880L);
         });
     }
