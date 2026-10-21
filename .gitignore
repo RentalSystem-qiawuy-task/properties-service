@@ -4,12 +4,22 @@
 **/build/
 !gradle/wrapper/gradle-wrapper.jar
 
+# Build directories
+/bin/
+/target/
+/build/
+/out/
+
 # ===== IDE =====
 .idea/
 *.iml
 *.ipr
 *.iws
 .vscode/
+.metadata/
+.settings/
+.project
+.classpath
 
 # ===== OS =====
 .DS_Store

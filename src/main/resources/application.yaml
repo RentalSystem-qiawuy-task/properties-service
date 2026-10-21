@@ -115,7 +115,7 @@ management:
         enabled: true
   health:
     kafka:
-      enabled: false
+      enabled: true
   info:
     env:
       enabled: false

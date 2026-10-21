@@ -12,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
+
 import java.time.*;
 
 @Service
@@ -34,18 +35,22 @@ public class RoomOccupantService {
         requireRoom(roomId);
         return occupants.current(roomId, LocalDate.now(clock), page).map(mapper::toResponse);
     }
+
     public Page<RoomOccupantResponse> history(long roomId, Pageable page) {
         requireRoom(roomId);
         return occupants.history(roomId, page).map(mapper::toResponse);
     }
+
     public Page<RoomOccupantResponse> byUser(long userId, Pageable page) {
         return occupants.byUser(userId, page).map(mapper::toResponse);
     }
+
     public RoomOccupantResponse detail(long roomId, long id) {
         requireRoom(roomId);
         return occupants.byId(id).filter(o -> o.getRoomId() == roomId).map(mapper::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Room occupant was not found", "ROOM_OCCUPANT_NOT_FOUND"));
     }
+
     public OccupancySummaryResponse summary(long roomId, LocalDate date) {
         Room room = requireRoom(roomId);
         LocalDate day = date == null ? LocalDate.now(clock) : date;
@@ -53,6 +58,7 @@ public class RoomOccupantService {
         long available = room.getMaxCapacity() - count;
         return new OccupancySummaryResponse(roomId, room.getMaxCapacity(), count, available, available < 0, room.getStatus(), day);
     }
+
     private Room requireRoom(long id) {
         Room room = rooms.get(id);
         if (!buildings.buildingExists(room.getBuildingId()))

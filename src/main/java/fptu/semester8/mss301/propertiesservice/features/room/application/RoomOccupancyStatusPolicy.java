@@ -4,7 +4,9 @@ import fptu.semester8.mss301.propertiesservice.features.room.infrastructure.pers
 import fptu.semester8.mss301.propertiesservice.features.events.PropertyEventPublisher;
 import fptu.semester8.mss301.propertiesservice.features.roomoccupant.application.port.out.RoomOccupantRepository;
 import fptu.semester8.mss301.propertiesservice.features.roomoccupant.infrastructure.persistence.ProjectionCheckpointRepository;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,12 +15,18 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoomOccupancyStatusPolicy {
-    private final RoomRepository rooms;
-    private final RoomOccupantRepository occupants;
-    private final ProjectionCheckpointRepository checkpoints;
-    private final PropertyEventPublisher events;
-    private final Clock clock;
+
+    RoomRepository rooms;
+
+    RoomOccupantRepository occupants;
+    
+    ProjectionCheckpointRepository checkpoints;
+
+    PropertyEventPublisher events;
+
+    Clock clock;
 
     @Transactional
     public void refresh(long roomId) {

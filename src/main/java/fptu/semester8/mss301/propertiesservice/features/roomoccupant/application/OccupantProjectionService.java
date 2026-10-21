@@ -23,9 +23,9 @@ import java.util.*;
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
 public class OccupantProjectionService {
     static Logger log = LoggerFactory.getLogger(OccupantProjectionService.class);
-    RoomRepository rooms;
+    RoomRepository roomRepository;
     BuildingReferenceRepository buildings;
-    RoomOccupantRepository occupants;
+    RoomOccupantRepository roomOccupantRepository;
     ProjectionCheckpointRepository checkpoints;
     RoomOccupancyStatusPolicy statusPolicy;
     IdGenerator ids;
@@ -39,7 +39,7 @@ public class OccupantProjectionService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void apply(Change event) {
         // A room lock serializes different contract streams affecting the same room.
-        var room = rooms.findByIdForUpdate(event.roomId())
+        var room = roomRepository.findByIdForUpdate(event.roomId())
                 .orElseThrow(() -> new IllegalStateException("Projection room is missing; retry/reconcile"));
         if (!buildings.buildingExists(room.getBuildingId()))
             throw new IllegalStateException("Projection building is deleted or missing; reconcile");
@@ -71,22 +71,22 @@ public class OccupantProjectionService {
     }
 
     private void handleTenantAdded(Change e) {
-        var existing = occupants.byAssignment(e.assignmentId());
+        var existing = roomOccupantRepository.byAssignment(e.assignmentId());
         if (existing.isPresent()) {
             var row = existing.get();
             requireIdentity(row, e);
             if (!row.getMoveInDate().equals(e.date()) || row.getStatus() != RoomOccupantStatus.ACTIVE)
                 throw new InvalidEventException("Assignment identity cannot be reused; rejoining requires a new contractTenantId");
             row.recordRevision(e.revision(), clock.instant());
-            occupants.save(row);
+            roomOccupantRepository.save(row);
             return;
         }
-        occupants.save(new RoomOccupant(ids.nextId(), e.assignmentId(), e.roomId(), e.contractId(),
+        roomOccupantRepository.save(new RoomOccupant(ids.nextId(), e.assignmentId(), e.roomId(), e.contractId(),
                 e.customerId(), e.date(), e.revision(), clock.instant()));
     }
 
     private void handleTenantRemoved(Change e) {
-        var row = occupants.byAssignment(e.assignmentId())
+        var row = roomOccupantRepository.byAssignment(e.assignmentId())
                 .orElseThrow(() -> new IllegalStateException("Assignment missing; retry then DLT/reconcile"));
         requireIdentity(row, e);
         if (row.getStatus() == RoomOccupantStatus.ENDED && !e.date().equals(row.getMoveOutDate()))
@@ -95,7 +95,7 @@ public class OccupantProjectionService {
     }
 
     private void handleContractEnded(Change e) {
-        for (var row : occupants.byContract(e.contractId())) {
+        for (var row : roomOccupantRepository.byContract(e.contractId())) {
             if (row.getRoomId() != e.roomId()) throw new InvalidEventException("Contract projection room mismatch");
             if (row.getStatus() == RoomOccupantStatus.ACTIVE) end(row, e);
         }
@@ -107,7 +107,7 @@ public class OccupantProjectionService {
         if (e.date().isBefore(row.getMoveInDate()))
             throw new InvalidEventException("Departure precedes assignment arrival");
         row.end(e.date(), e.revision(), clock.instant());
-        occupants.save(row);
+        roomOccupantRepository.save(row);
     }
 
     private void requireIdentity(RoomOccupant row, Change e) {
