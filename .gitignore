@@ -10,7 +10,7 @@
 /build/
 /out/
 /.gradle/
-/gradle-user-home/
+.gradle-user-home/
 
 # ===== IDE =====
 .idea/
