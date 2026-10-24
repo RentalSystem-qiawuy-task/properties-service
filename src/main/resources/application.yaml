@@ -77,10 +77,10 @@ building:
 
 springdoc:
   api-docs:
-    enabled: ${OPENAPI_ENABLED:false}
+    enabled: ${OPENAPI_ENABLED:true}
     path: /v3/api-docs
   swagger-ui:
-    enabled: ${SWAGGER_UI_ENABLED:false}
+    enabled: ${SWAGGER_UI_ENABLED:true}
 
 eureka:
   client:

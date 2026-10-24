@@ -51,7 +51,7 @@ Other dependencies and their exact declarations are in [`build.gradle.kts`](buil
 
 ## Quick start
 
-You need Git, JDK 21, Docker Engine with Compose, a reachable Cloudflare R2 account/bucket, and the larger rental system's shared Kafka broker and topics. The supplied Compose file starts **this service and PostGIS only**. It expects the external network `rental-system_rental-net` and Kafka topics to exist; start the stack that owns them first. The `.env` template contains placeholders and must be filled with your own local values.
+You need Git, JDK 21, Docker Engine with Compose, access to a Cloudflare R2 endpoint and bucket, and the larger rental system's shared Kafka broker and topics. The supplied Compose file starts **this service and PostGIS only**. It expects the external network `rental-system_rental-net` and Kafka topics to exist; start the stack that owns them first. The `.env` template contains placeholders and must be filled with your own local values.
 
 1. Clone the repository:
 
@@ -103,7 +103,7 @@ You need Git, JDK 21, Docker Engine with Compose, a reachable Cloudflare R2 acco
    curl http://localhost:8083/actuator/health
    ```
 
-   Compose enables Swagger UI at `http://localhost:8083/swagger-ui/index.html`. It is disabled by default when running Spring Boot directly. Health depends on the configured services, including the database and Kafka.
+   Swagger UI is available at `http://localhost:8083/swagger-ui/index.html` for both Compose and direct Spring Boot runs. Set `OPENAPI_ENABLED=false` and `SWAGGER_UI_ENABLED=false` to disable it. Health depends on the configured services, including the database and Kafka.
 
 For host-based `bootRun`, environment variable details, JAR packaging, and troubleshooting, follow the [developer guide](HELP.md). In particular, Spring Boot does **not** load the Compose `.env` file automatically when launched from a terminal or IDE.
 
@@ -118,7 +118,7 @@ curl http://localhost:8083/api/v1/provinces
 | Area | Example route | Use |
 | --- | --- | --- |
 | Locations | `GET /api/v1/provinces`, `GET /api/v1/wards` | Browse administrative locations. |
-| Buildings | `GET /api/v1/buildings`, `GET /api/v1/buildings/nearby` | List and search buildings. |
+| Buildings | `GET /api/v1/buildings`, `GET /api/v1/buildings/search` | List and search buildings. The nearby search also requires coordinates and a radius. |
 | Rooms | `GET /api/v1/rooms`, `GET /api/v1/room-types` | Browse rooms and types. |
 | Prices | `GET /api/v1/rooms/{roomId}/prices/current` | Read a room's current price. |
 | Occupancy | `GET /api/v1/rooms/{roomId}/occupants` | Read occupants through a trusted gateway identity. |
