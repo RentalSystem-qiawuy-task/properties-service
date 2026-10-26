@@ -5,7 +5,7 @@ import java.time.Instant;
 
 public record BuildingSearchItem(Long buildingId, String name, String address, Long wardId,
                                  String wardName, Long provinceId, String provinceName,
-                                 BigDecimal latitude, BigDecimal longitude, String description,
+                                 BigDecimal latitude, BigDecimal longitude, String description, String buildingStatus,
                                  Instant createdAt, Instant updatedAt, Double distanceMeters,
                                  String buildingUrlImage) {
 }

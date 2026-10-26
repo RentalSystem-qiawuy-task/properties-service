@@ -22,6 +22,18 @@ class BuildingRequestValidationTest {
     }
 
     @Test
+    void validatesBuildingStatusCodes() {
+        for (var status : fptu.semester8.mss301.propertiesservice.features.building.domain.BuildingStatus.values()) {
+            assertTrue(validator.validate(new BuildingRequest("Building", "Address", 1L, 1L,
+                    BigDecimal.TEN, BigDecimal.TEN, null, status.getValue())).isEmpty());
+        }
+        for (var status : java.util.List.of("UNKNOWN", "", "active")) {
+            assertFalse(validator.validate(new BuildingRequest("Building", "Address", 1L, 1L,
+                    BigDecimal.TEN, BigDecimal.TEN, null, status)).isEmpty());
+        }
+    }
+
+    @Test
     void rejectsCoordinatesOutsideSupportedRanges() {
         var request = new BuildingRequest("Building", "Address", 1L, 1L,
                 new BigDecimal("90.0001"), new BigDecimal("-180.0001"), null);

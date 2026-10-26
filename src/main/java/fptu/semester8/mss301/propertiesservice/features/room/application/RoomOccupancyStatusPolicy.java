@@ -4,6 +4,7 @@ import fptu.semester8.mss301.propertiesservice.features.room.infrastructure.pers
 import fptu.semester8.mss301.propertiesservice.features.events.PropertyEventPublisher;
 import fptu.semester8.mss301.propertiesservice.features.roomoccupant.application.port.out.RoomOccupantRepository;
 import fptu.semester8.mss301.propertiesservice.features.roomoccupant.infrastructure.persistence.ProjectionCheckpointRepository;
+import fptu.semester8.mss301.propertiesservice.features.building.application.BuildingService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -18,6 +19,8 @@ import java.util.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoomOccupancyStatusPolicy {
 
+    BuildingService buildingService;
+
     RoomRepository rooms;
 
     RoomOccupantRepository occupants;
@@ -31,6 +34,7 @@ public class RoomOccupancyStatusPolicy {
     @Transactional
     public void refresh(long roomId) {
         var room = rooms.findByIdForUpdate(roomId).orElseThrow(() -> new IllegalStateException("Room missing"));
+        buildingService.refreshOccupancyStatus(room.getBuildingId());
         if ("MAINTENANCE".equals(room.getStatus())) return;
         LocalDate today = LocalDate.now(clock);
         var current = occupants.current(roomId, today, Pageable.unpaged()).getContent();

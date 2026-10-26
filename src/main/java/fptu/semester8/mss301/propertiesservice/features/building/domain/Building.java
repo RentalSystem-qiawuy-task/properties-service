@@ -36,6 +36,9 @@ public class Building {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "building_status", nullable = false, length = 20)
+    private String buildingStatus = BuildingStatus.ACTIVE.getValue();
+
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted;
 
@@ -77,6 +80,13 @@ public class Building {
         this.latitude = latitude;
         this.longitude = longitude;
         this.description = description;
+        this.updatedAt = now;
+    }
+
+    public String getBuildingStatus() { return buildingStatus; }
+
+    public void changeStatus(BuildingStatus status, Instant now) {
+        this.buildingStatus = status.getValue();
         this.updatedAt = now;
     }
 

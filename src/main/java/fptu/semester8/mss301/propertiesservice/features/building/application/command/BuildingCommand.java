@@ -9,5 +9,11 @@ public record BuildingCommand(
         Long provinceId,
         BigDecimal latitude,
         BigDecimal longitude,
-        String description
-) {}
+        String description,
+        String buildingStatus
+) {
+    public BuildingCommand(String name, String address, Long wardId, Long provinceId,
+                           BigDecimal latitude, BigDecimal longitude, String description) {
+        this(name, address, wardId, provinceId, latitude, longitude, description, null);
+    }
+}

@@ -22,6 +22,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import fptu.exe202.signify.apiresponse.exception.BadRequestException;
 import java.math.BigDecimal;
+import fptu.semester8.mss301.propertiesservice.features.building.domain.BuildingStatus;
+import fptu.exe202.signify.apiresponse.exception.ConflictException;
 
 import java.time.Instant;
 
@@ -85,10 +87,24 @@ public class BuildingService {
 
     @Transactional
     public Building update(long buildingId, BuildingCommand request) {
+        referenceRepository.lockBuilding(buildingId);
         Building building = findActive(buildingId);
         validateWard(request.wardId());
         validateProvince(request.provinceId());
         validateWardProvince(request.wardId(), request.provinceId());
+        if (request.buildingStatus() != null) {
+            BuildingStatus status;
+            try {
+                status = BuildingStatus.valueOf(request.buildingStatus());
+            } catch (IllegalArgumentException exception) {
+                throw new BadRequestException("Unsupported building status", "INVALID_BUILDING_STATUS");
+            }
+            if (BuildingStatus.CLOSED.getValue().equals(status.getValue())
+                    && (referenceRepository.hasResidents(buildingId) || referenceRepository.hasOccupiedRooms(buildingId))) {
+                throw new ConflictException("Cannot close a building while rooms still have residents", "BUILDING_HAS_RESIDENTS");
+            }
+            building.changeStatus(status, Instant.now());
+        }
         building.update(
                 request.name().trim(), request.address().trim(), request.wardId(), request.provinceId(),
                 request.latitude(), request.longitude(), request.description(), Instant.now()
@@ -110,6 +126,21 @@ public class BuildingService {
         }
         building.softDelete(Instant.now());
         buildingRepository.save(building);
+    }
+
+    @Transactional
+    public void refreshOccupancyStatus(long buildingId) {
+        referenceRepository.lockBuilding(buildingId);
+        var optional = buildingRepository.findActiveById(buildingId);
+        if (optional.isEmpty()) return;
+        Building building = optional.get();
+        // Keep new buildings ACTIVE until they have rooms; preserve manual closure/maintenance.
+        if (BuildingStatus.ACTIVE.getValue().equals(building.getBuildingStatus())
+                && referenceRepository.hasRooms(buildingId) && !referenceRepository.hasResidents(buildingId)) {
+            building.changeStatus(BuildingStatus.INACTIVE, Instant.now());
+            buildingRepository.save(building);
+            events.buildingUpdated(building);
+        }
     }
 
     private Building findActive(long buildingId) {

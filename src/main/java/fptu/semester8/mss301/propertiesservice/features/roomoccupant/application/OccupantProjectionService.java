@@ -41,6 +41,7 @@ public class OccupantProjectionService {
         // A room lock serializes different contract streams affecting the same room.
         var room = roomRepository.findByIdForUpdate(event.roomId())
                 .orElseThrow(() -> new IllegalStateException("Projection room is missing; retry/reconcile"));
+        buildings.lockBuilding(room.getBuildingId());
         if (!buildings.buildingExists(room.getBuildingId()))
             throw new IllegalStateException("Projection building is deleted or missing; reconcile");
         if (event.buildingId() != null && !event.buildingId().equals(room.getBuildingId()))

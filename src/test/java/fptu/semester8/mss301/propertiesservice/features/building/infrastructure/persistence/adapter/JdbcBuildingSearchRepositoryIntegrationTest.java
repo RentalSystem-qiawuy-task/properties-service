@@ -32,6 +32,19 @@ class JdbcBuildingSearchRepositoryIntegrationTest extends PostgresIntegrationSup
     }
 
     @Test
+    void buildingStatusDefaultsAndConstraintAreEnforced() {
+        assertEquals("ACTIVE", jdbc.queryForObject("SELECT building_status FROM building WHERE building_id=10", String.class));
+        org.junit.jupiter.api.Assertions.assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
+                () -> jdbc.update("UPDATE building SET building_status='INVALID' WHERE building_id=10"));
+        org.junit.jupiter.api.Assertions.assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
+                () -> jdbc.update("UPDATE building SET building_status=NULL WHERE building_id=10"));
+        jdbc.update("UPDATE building SET building_status='MAINTENANCE' WHERE building_id=10");
+        var item = repository.search(null, null, null, PageRequest.of(0, 10)).getContent().stream()
+                .filter(b -> b.buildingId() == 10L).findFirst().orElseThrow();
+        assertEquals("MAINTENANCE", mapper.toSearchResponse(item).buildingStatus());
+    }
+
+    @Test
     void searchReturnsFirstImageByDisplayOrderAndIdOrNullWhenMissing() {
         var page = repository.search(null, null, null, PageRequest.of(0, 10));
 

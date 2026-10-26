@@ -71,7 +71,7 @@ public class PropertyEventPublisher {
     public void buildingUpdated(Building building) {
         write("BuildingUpdated", building.getBuildingId(), new BuildingPayload(
                 Long.toString(building.getBuildingId()), building.getName(), building.getAddress(),
-                Long.toString(building.getWardId()), null, building.getLatitude(), building.getLongitude()));
+                Long.toString(building.getWardId()), null, building.getLatitude(), building.getLongitude(), building.getBuildingStatus()));
     }
 
     private void write(String type, long key, Object payload) {
@@ -106,5 +106,5 @@ public class PropertyEventPublisher {
     private record RoomPricePayload(String roomId, BigDecimal price, LocalDate effectiveFrom) {}
     private record BuildingPayload(String buildingId, String name, String address,
                                    String wardId, String districtId, BigDecimal latitude,
-                                   BigDecimal longitude) {}
+                                   BigDecimal longitude, String buildingStatus) {}
 }

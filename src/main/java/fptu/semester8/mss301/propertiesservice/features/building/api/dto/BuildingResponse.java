@@ -15,6 +15,7 @@ public record BuildingResponse(
         BigDecimal latitude,
         BigDecimal longitude,
         String description,
+        String buildingStatus,
         Instant createdAt,
         Instant updatedAt
 ) {}

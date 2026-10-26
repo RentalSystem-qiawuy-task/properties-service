@@ -7,6 +7,7 @@ import fptu.semester8.mss301.propertiesservice.features.room.api.dto.RoomRequest
 import fptu.semester8.mss301.propertiesservice.features.room.domain.*;
 import fptu.semester8.mss301.propertiesservice.features.room.infrastructure.persistence.RoomRepository;
 import fptu.semester8.mss301.propertiesservice.features.events.PropertyEventPublisher;
+import fptu.semester8.mss301.propertiesservice.features.building.application.BuildingService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -21,6 +22,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RoomService {
+
+    BuildingService buildingService;
 
     RoomRepository rooms;
 
@@ -39,6 +42,7 @@ public class RoomService {
         Instant n = Instant.now();
         Room room = rooms.saveAndFlush(new Room(ids.nextId(), r.buildingId(), r.roomTypeId(), r.roomCode().trim(), r.maxCapacity(), RoomStatus.VACANT.getValue(), r.area(), r.bedroomCount(), r.bathroomCount(), r.basePrice(), n));
         events.roomStatusChanged(room, null);
+        buildingService.refreshOccupancyStatus(room.getBuildingId());
         return room;
     }
 
@@ -69,15 +73,21 @@ public class RoomService {
         if (!Objects.equals(previousStatus, status)) {
             events.roomStatusChanged(saved, previousStatus);
         }
+        buildingService.refreshOccupancyStatus(saved.getBuildingId());
         return saved;
     }
 
     @Transactional
     public void delete(long id) {
-        rooms.delete(get(id));
+        Room room = get(id);
+        buildings.lockBuilding(room.getBuildingId());
+        rooms.delete(room);
+        rooms.flush();
+        buildingService.refreshOccupancyStatus(room.getBuildingId());
     }
 
     private void validateBuilding(long id) {
+        buildings.lockBuilding(id);
         if (!buildings.buildingExists(id))
             throw new ResourceNotFoundException("Building %d was not found".formatted(id), "BUILDING_NOT_FOUND");
     }

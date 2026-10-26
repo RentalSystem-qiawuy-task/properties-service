@@ -36,6 +36,26 @@ class RoomOccupantIntegrationTest extends PostgresIntegrationSupport {
         jdbc.update("INSERT INTO room(room_id,building_id,room_type_id,room_number,max_capacity,status) VALUES (12,34,123456789012345601,'A1',2,'VACANT'),(13,34,123456789012345601,'A2',2,'VACANT')");
     }
 
+    @Test void buildingBecomesInactiveOnlyAfterLastResidentsInclusiveDepartureDate() {
+        add(5001, 77, 1, "2026-10-20");
+        remove(5001, 77, 2, "2026-10-21");
+        assertEquals(fptu.semester8.mss301.propertiesservice.features.building.domain.BuildingStatus.ACTIVE.getValue(),
+                jdbc.queryForObject("SELECT building_status FROM building WHERE building_id=34", String.class));
+        when(clock.instant()).thenReturn(Instant.parse("2026-10-22T05:00:00Z"));
+        policy.refresh(12);
+        assertEquals(fptu.semester8.mss301.propertiesservice.features.building.domain.BuildingStatus.INACTIVE.getValue(),
+                jdbc.queryForObject("SELECT building_status FROM building WHERE building_id=34", String.class));
+    }
+
+    @Test void buildingStaysActiveWhenAnotherRoomHasResidents() {
+        add(5001, 77, 1, "2026-10-20");
+        processor.process(event("TenantAdded", 1, assignment(6001, 88, "joinedAt", "2026-10-20"))
+                .replace("\"contractId\":7", "\"contractId\":8").replace("\"roomId\":12", "\"roomId\":13"));
+        remove(5001, 77, 2, "2026-10-20");
+        assertEquals(fptu.semester8.mss301.propertiesservice.features.building.domain.BuildingStatus.ACTIVE.getValue(),
+                jdbc.queryForObject("SELECT building_status FROM building WHERE building_id=34", String.class));
+    }
+
     @Test void inclusiveDatesHistoryRejoinAndOverCapacity() {
         assertEquals(0, reads.summary(12, null).currentOccupants());
         add(5001, 77, 1, "2026-10-20");

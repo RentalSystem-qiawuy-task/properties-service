@@ -17,6 +17,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
+import fptu.semester8.mss301.propertiesservice.features.building.domain.BuildingStatus;
+import fptu.exe202.signify.apiresponse.exception.ConflictException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -59,6 +61,7 @@ class BuildingServiceTest {
 
         var response = service.create(request());
 
+        assertEquals(BuildingStatus.ACTIVE.getValue(), response.getBuildingStatus());
         assertEquals(123L, response.getBuildingId());
         assertEquals("Test building", response.getName());
         verify(referenceRepository).existWardById(7L);
@@ -152,6 +155,108 @@ class BuildingServiceTest {
         verify(referenceRepository, never()).hasRooms(123L);
         verify(buildingRepository, never()).save(any());
         assertTrue(building.isDeleted());
+    }
+
+    @Test
+    void closeRejectsCurrentResidentsEvenIfRoomStatusIsVacant() {
+        prepareUpdate();
+        when(referenceRepository.hasResidents(123L)).thenReturn(true);
+        assertThrows(ConflictException.class, () -> service.update(123L, withStatus(BuildingStatus.CLOSED)));
+        verify(buildingRepository, never()).save(any());
+    }
+
+    @Test
+    void closeRejectsOccupiedRoomWithoutProjectedResidents() {
+        prepareUpdate();
+        when(referenceRepository.hasOccupiedRooms(123L)).thenReturn(true);
+        assertThrows(ConflictException.class, () -> service.update(123L, withStatus(BuildingStatus.CLOSED)));
+        verify(buildingRepository, never()).save(any());
+    }
+
+    @Test
+    void closeSucceedsWhenAllRoomsAreEmpty() {
+        prepareUpdate();
+        assertEquals(BuildingStatus.CLOSED.getValue(),
+                service.update(123L, withStatus(BuildingStatus.CLOSED)).getBuildingStatus());
+    }
+
+    @Test
+    void updateAcceptsMaintenanceAndPreservesStatusWhenOmitted() {
+        prepareUpdate();
+        service.update(123L, withStatus(BuildingStatus.MAINTENANCE));
+        assertEquals(BuildingStatus.MAINTENANCE.getValue(), service.update(123L, request()).getBuildingStatus());
+    }
+
+    @Test
+    void updateRejectsUnknownStatus() {
+        prepareUpdate();
+        var r = request();
+        assertThrows(BadRequestException.class, () -> service.update(123L,
+                new BuildingCommand(r.name(), r.address(), r.wardId(), r.provinceId(),
+                        r.latitude(), r.longitude(), r.description(), "UNKNOWN")));
+    }
+
+    @Test
+    void createAlwaysUsesActiveEvenWhenRequestSuppliesClosed() {
+        when(referenceRepository.existWardById(7L)).thenReturn(true);
+        when(referenceRepository.existProvinceById(1L)).thenReturn(true);
+        when(referenceRepository.wardBelongsToProvince(7L, 1L)).thenReturn(true);
+        assertEquals(BuildingStatus.ACTIVE.getValue(), service.create(withStatus(BuildingStatus.CLOSED)).getBuildingStatus());
+    }
+
+    @Test
+    void emptyBuildingWithRoomsBecomesInactive() {
+        var building = building(123L);
+        when(buildingRepository.findActiveById(123L)).thenReturn(Optional.of(building));
+        when(referenceRepository.hasRooms(123L)).thenReturn(true);
+        service.refreshOccupancyStatus(123L);
+        assertEquals(BuildingStatus.INACTIVE.getValue(), building.getBuildingStatus());
+        verify(buildingRepository).save(building);
+    }
+
+    @Test
+    void occupiedBuildingStaysActive() {
+        var building = building(123L);
+        when(buildingRepository.findActiveById(123L)).thenReturn(Optional.of(building));
+        when(referenceRepository.hasRooms(123L)).thenReturn(true);
+        when(referenceRepository.hasResidents(123L)).thenReturn(true);
+        service.refreshOccupancyStatus(123L);
+        assertEquals(BuildingStatus.ACTIVE.getValue(), building.getBuildingStatus());
+        verify(buildingRepository, never()).save(any());
+    }
+
+    @Test
+    void newBuildingWithoutRoomsStaysActive() {
+        var building = building(123L);
+        when(buildingRepository.findActiveById(123L)).thenReturn(Optional.of(building));
+        service.refreshOccupancyStatus(123L);
+        assertEquals(BuildingStatus.ACTIVE.getValue(), building.getBuildingStatus());
+        verify(buildingRepository, never()).save(any());
+    }
+
+    @Test
+    void automaticRefreshPreservesManualMaintenanceAndClosure() {
+        for (var status : List.of(BuildingStatus.MAINTENANCE, BuildingStatus.CLOSED)) {
+            var building = building(123L);
+            building.changeStatus(status, Instant.now());
+            when(buildingRepository.findActiveById(123L)).thenReturn(Optional.of(building));
+            service.refreshOccupancyStatus(123L);
+            assertEquals(status.getValue(), building.getBuildingStatus());
+        }
+        verify(buildingRepository, never()).save(any());
+    }
+
+    private void prepareUpdate() {
+        when(buildingRepository.findActiveById(123L)).thenReturn(Optional.of(building(123L)));
+        when(referenceRepository.existWardById(7L)).thenReturn(true);
+        when(referenceRepository.existProvinceById(1L)).thenReturn(true);
+        when(referenceRepository.wardBelongsToProvince(7L, 1L)).thenReturn(true);
+    }
+
+    private BuildingCommand withStatus(BuildingStatus status) {
+        var r = request();
+        return new BuildingCommand(r.name(), r.address(), r.wardId(), r.provinceId(),
+                r.latitude(), r.longitude(), r.description(), status.getValue());
     }
 
     private BuildingCommand request() {

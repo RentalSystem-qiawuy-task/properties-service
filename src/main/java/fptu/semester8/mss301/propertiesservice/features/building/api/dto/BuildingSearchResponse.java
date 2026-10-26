@@ -21,6 +21,7 @@ public record BuildingSearchResponse(
         BigDecimal latitude,
         BigDecimal longitude,
         String description,
+        String buildingStatus,
         Instant createdAt,
         Instant updatedAt,
         Double distanceMeters,

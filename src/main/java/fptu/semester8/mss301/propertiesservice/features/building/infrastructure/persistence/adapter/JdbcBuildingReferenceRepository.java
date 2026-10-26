@@ -15,6 +15,8 @@ public class JdbcBuildingReferenceRepository implements BuildingReferenceReposit
 
     JdbcTemplate jdbcTemplate;
 
+    java.time.Clock clock;
+
     ProvinceRepository provinceRepository;
 
     WardRepository wardRepository;
@@ -37,6 +39,39 @@ public class JdbcBuildingReferenceRepository implements BuildingReferenceReposit
                 buildingId
         );
         return Boolean.TRUE.equals(exists);
+    }
+
+    @Override
+    public void lockBuilding(long buildingId) {
+        jdbcTemplate.query("SELECT building_id FROM building WHERE building_id = ? FOR UPDATE",
+                (rs, row) -> rs.getLong(1), buildingId);
+    }
+
+    @Override
+    public boolean hasResidents(long buildingId) {
+        // Departure dates are inclusive, matching the occupant read model.
+        // Legacy occupied rooms without occupant history cannot be assumed empty.
+        var today = java.time.LocalDate.now(clock);
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1 FROM room r WHERE r.building_id = ? AND (
+                        EXISTS (SELECT 1 FROM room_occupant o WHERE o.room_id = r.room_id
+                            AND o.move_in_date <= ?
+                            AND (o.move_out_date IS NULL OR o.move_out_date >= ?)
+                            AND (o.room_occupant_status = 'ACTIVE'
+                                OR (o.room_occupant_status = 'ENDED' AND o.move_out_date IS NOT NULL)))
+                        OR (r.status IN ('OCCUPIED', 'UPCOMING_VACANT')
+                            AND NOT EXISTS (SELECT 1 FROM room_occupant o WHERE o.room_id = r.room_id))
+                    )
+                )
+                """, Boolean.class, buildingId, today, today));
+    }
+
+    @Override
+    public boolean hasOccupiedRooms(long buildingId) {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(
+                "SELECT EXISTS (SELECT 1 FROM room WHERE building_id = ? AND status IN ('OCCUPIED', 'UPCOMING_VACANT'))",
+                Boolean.class, buildingId));
     }
 
     @Override

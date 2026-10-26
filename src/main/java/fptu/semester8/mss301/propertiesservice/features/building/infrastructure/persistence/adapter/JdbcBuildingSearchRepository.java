@@ -53,7 +53,7 @@ public class JdbcBuildingSearchRepository implements BuildingSearchRepository {
     private Page<BuildingSearchItem> queryPage(String from, MapSqlParameterSource params, Pageable pageable,
                                                 String distanceExpression, String distanceAlias) {
         String select = "SELECT b.building_id, b.name, b.address, b.ward_id, w.name AS ward_name, " +
-                "w.province_id, p.name AS province_name, b.latitude, b.longitude, b.description, " +
+                "w.province_id, p.name AS province_name, b.latitude, b.longitude, b.description, b.building_status, " +
                 "b.created_at, b.updated_at, " +
                 "(SELECT bi.image_url FROM building_images bi WHERE bi.building_id = b.building_id " +
                 "ORDER BY bi.display_order, bi.building_image_id LIMIT 1) AS building_url_image" +
@@ -72,7 +72,7 @@ public class JdbcBuildingSearchRepository implements BuildingSearchRepository {
         List<BuildingSearchItem> items = jdbc.query(sql, params, (rs, row) -> new BuildingSearchItem(
                 rs.getLong("building_id"), rs.getString("name"), rs.getString("address"), rs.getLong("ward_id"),
                 rs.getString("ward_name"), rs.getLong("province_id"), rs.getString("province_name"),
-                rs.getBigDecimal("latitude"), rs.getBigDecimal("longitude"), rs.getString("description"),
+                rs.getBigDecimal("latitude"), rs.getBigDecimal("longitude"), rs.getString("description"), rs.getString("building_status"),
                 rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant(),
                 distanceAlias == null ? null : rs.getDouble(distanceAlias), rs.getString("building_url_image")));
         Long total = jdbc.queryForObject("SELECT COUNT(*)" + from, params, Long.class);

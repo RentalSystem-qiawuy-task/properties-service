@@ -18,5 +18,14 @@ public record BuildingRequest(
         @Schema(type = "string", description = "ID tỉnh/thành phố dạng chuỗi số dương", example = "898785309339156481") @NotNull @Positive Long provinceId,
         @Schema(description = "Vĩ độ từ -90 đến 90", example = "10.7769") @NotNull @DecimalMin("-90") @DecimalMax("90") BigDecimal latitude,
         @Schema(description = "Kinh độ từ -180 đến 180", example = "106.7009") @NotNull @DecimalMin("-180") @DecimalMax("180") BigDecimal longitude,
-        @Schema(description = "Mô tả tòa nhà") String description
-) {}
+        @Schema(description = "Mô tả tòa nhà") String description,
+        @Schema(description = "Optional on update; omitted keeps current status. Creation always uses ACTIVE.",
+                allowableValues = {"ACTIVE", "INACTIVE", "MAINTENANCE", "CLOSED"})
+        @jakarta.validation.constraints.Pattern(regexp = "ACTIVE|INACTIVE|MAINTENANCE|CLOSED")
+        String buildingStatus
+) {
+    public BuildingRequest(String name, String address, Long wardId, Long provinceId,
+                           BigDecimal latitude, BigDecimal longitude, String description) {
+        this(name, address, wardId, provinceId, latitude, longitude, description, null);
+    }
+}

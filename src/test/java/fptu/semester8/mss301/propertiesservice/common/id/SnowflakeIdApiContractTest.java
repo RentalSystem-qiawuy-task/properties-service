@@ -61,9 +61,9 @@ class SnowflakeIdApiContractTest {
         long id = Long.parseLong(LARGE_ID);
         List<Object> responses = List.of(
                 new BuildingResponse(id, "Green", "12 Main", id + 1, id + 2,
-                        null, null, null, null, null),
+                        null, null, null, null, null, null),
                 new BuildingSearchResponse(id, "Green", "12 Main", id + 2, "Province",
-                        id + 1, "Ward", null, null, null, null, null, null, null),
+                        id + 1, "Ward", null, null, null, null, null, null, null, null),
                 new ProvinceResponse(id, "01", "Province", null, null, null),
                 new WardResponse(id, id + 1, "00001", "Ward", null, null, null),
                 new RoomTypeResponse(id, "STUDIO", "Studio", null, null, null),
