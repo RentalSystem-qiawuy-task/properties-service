@@ -23,6 +23,8 @@ public record BuildingSearchResponse(
         String description,
         Instant createdAt,
         Instant updatedAt,
-        Double distanceMeters
+        Double distanceMeters,
+        @Schema(description = "URL của ảnh đầu tiên theo displayOrder; null nếu tòa nhà chưa có ảnh")
+        String buildingUrlImage
 ) {
 }

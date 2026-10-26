@@ -54,7 +54,10 @@ public class JdbcBuildingSearchRepository implements BuildingSearchRepository {
                                                 String distanceExpression, String distanceAlias) {
         String select = "SELECT b.building_id, b.name, b.address, b.ward_id, w.name AS ward_name, " +
                 "w.province_id, p.name AS province_name, b.latitude, b.longitude, b.description, " +
-                "b.created_at, b.updated_at" + (distanceExpression == null ? "" : ", " + distanceExpression + " AS " + distanceAlias);
+                "b.created_at, b.updated_at, " +
+                "(SELECT bi.image_url FROM building_images bi WHERE bi.building_id = b.building_id " +
+                "ORDER BY bi.display_order, bi.building_image_id LIMIT 1) AS building_url_image" +
+                (distanceExpression == null ? "" : ", " + distanceExpression + " AS " + distanceAlias);
         String order = pageable.getSort().isUnsorted() ? "b.created_at DESC" : pageable.getSort().stream()
                 .map(o -> (o.getProperty().equals("distanceMeters") && distanceExpression != null
                         ? distanceExpression
@@ -71,7 +74,7 @@ public class JdbcBuildingSearchRepository implements BuildingSearchRepository {
                 rs.getString("ward_name"), rs.getLong("province_id"), rs.getString("province_name"),
                 rs.getBigDecimal("latitude"), rs.getBigDecimal("longitude"), rs.getString("description"),
                 rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant(),
-                distanceAlias == null ? null : rs.getDouble(distanceAlias)));
+                distanceAlias == null ? null : rs.getDouble(distanceAlias), rs.getString("building_url_image")));
         Long total = jdbc.queryForObject("SELECT COUNT(*)" + from, params, Long.class);
         return new PageImpl<>(items, pageable, total == null ? 0 : total);
     }

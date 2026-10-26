@@ -33,4 +33,4 @@ Nearby yêu cầu latitude [-90,90], longitude [-180,180], `radiusMeters > 0`; g
 
 `BuildingResponse`: `buildingId` (string), `name`, `address`, `wardId` (string), `provinceId` (string), `latitude`, `longitude`, `description`, `createdAt`, `updatedAt`.
 
-`BuildingSearchResponse` bổ sung `provinceName`, `wardName`, `distanceMeters` (có thể null). Lỗi thường gặp: `400` input/page/sort, `404` building hoặc tham chiếu ward/province, `409` xóa building đang có phòng.
+`BuildingSearchResponse` bổ sung `provinceName`, `wardName`, `distanceMeters` (có thể null) và `buildingUrlImage` (string/null). Trong kết quả `/search` và `/nearby`, `buildingUrlImage` là URL của ảnh đầu tiên của tòa nhà theo `display_order` tăng dần; nếu cùng thứ tự thì theo `building_image_id` tăng dần. Giá trị là `null` khi tòa nhà chưa có ảnh. Lỗi thường gặp: `400` input/page/sort, `404` building hoặc tham chiếu ward/province, `409` xóa building đang có phòng.
