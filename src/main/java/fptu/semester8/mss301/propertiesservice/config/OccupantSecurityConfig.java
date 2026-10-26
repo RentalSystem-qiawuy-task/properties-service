@@ -33,7 +33,9 @@ public class OccupantSecurityConfig {
     @Bean
     public SecurityFilterChain occupantSecurity(HttpSecurity http, ObjectMapper json) throws Exception {
         http.securityMatcher(request -> ROOM_READ.matcher(request.getServletPath()).matches()
-                        || USER_READ.matcher(request.getServletPath()).matches())
+                        || USER_READ.matcher(request.getServletPath()).matches()
+                        || "/api/v1/rooms/statistics".equals(
+                                request.getRequestURI().substring(request.getContextPath().length())))
                 .csrf(AbstractHttpConfigurer::disable)
                 .requestCache(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

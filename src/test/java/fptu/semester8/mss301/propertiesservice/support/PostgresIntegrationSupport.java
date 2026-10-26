@@ -25,7 +25,9 @@ public abstract class PostgresIntegrationSupport {
 
     @DynamicPropertySource
     static void database(DynamicPropertyRegistry r) {
-        r.add("spring.datasource.url", () -> POSTGRES.getJdbcUrl() + "?currentSchema=properties_service,public");
+        r.add("spring.datasource.url", () -> POSTGRES.getJdbcUrl()
+                + (POSTGRES.getJdbcUrl().contains("?") ? "&" : "?")
+                + "currentSchema=properties_service,public");
         r.add("spring.datasource.username", POSTGRES::getUsername);
         r.add("spring.datasource.password", POSTGRES::getPassword);
     }

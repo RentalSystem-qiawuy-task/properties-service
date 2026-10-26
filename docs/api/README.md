@@ -8,6 +8,7 @@
 | ImageStorageController | [images.md](images.md) |
 | ProvinceController | [provinces.md](provinces.md) |
 | RoomController | [rooms.md](rooms.md) |
+| RoomStatisticsController | [rooms.md — thống kê phòng](rooms.md#thống-kê-phòng) |
 | RoomPriceController | [room-prices.md](room-prices.md) |
 | RoomTypeController | [room-types.md](room-types.md) |
 | RoomOccupantController | [room-occupants.md](room-occupants.md) |
